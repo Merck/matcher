@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+	<title>Matcher</title>
+	<link type="text/css" rel="stylesheet" href="/css/matcher.css" />
+	<script src="/js/promise-1.0.0.min.js"></script>
+	<!-- We need the below jinja2 template syntax in order for template variables, passed in by the frontend_api.py, to be understood by the js code -->
+    <script> {% include '/js/matcher.js' %} </script>
+</head>
+<body onload="startup();">
+    <h1>Matcher</h1>
+    <br>
+    <div style="text-align: center; font-size: 20px;">
+        <a href="/examples" target="_blank"><strong>Run Example Search</strong></a>
+    </div>
+    <br>
+
+    <div style="display:flex; justify-content:center; flex-wrap:wrap; font-family: Helvetica;">
+        <div>
+
+            <div id="ketcher_iframe1_div" style="resize:both; overflow: hidden; width:500px; height:500px; display: inline-block;">
+                <iframe src="/ketcher/index.html" id="ketcher_iframe1" class="sketcher-frame" style="width:143%; height:143%;
+                -ms-transform: scale(0.7, 0.7); -webkit-transform: scale(0.7, 0.7); transform: scale(0.7, 0.7);-ms-transform-origin: 0px 0px;
+                -webkit-transform-origin: 0px 0px; transform-origin: 0px 0px;"></iframe>
+            </div>
+
+            <div id="ketcher_iframe2_div">
+                <iframe src="/ketcher/index.html" id="ketcher_iframe2" class="sketcher-frame" style="width:143%; height:143%;
+                -ms-transform: scale(0.7, 0.7); -webkit-transform: scale(0.7, 0.7); transform: scale(0.7, 0.7);-ms-transform-origin: 0px 0px;
+                -webkit-transform-origin: 0px 0px; transform-origin: 0px 0px;"></iframe>
+            </div>
+
+        </div>
+        <div style="margin-left:50px;">
+            <div>
+                <strong>Select inputs</strong><br><br>
+                <input type="radio" id="starting_molecule" name="input_type" value="starting_molecule" onclick="starting_molecule_only_click()" checked>
+                <label>Starting molecule</label><br>
+                <input type="radio" id="starting_molecule_and_product" name="input_type" value="starting_molecule_and_product" onclick="starting_molecule_and_product_click()">
+                <label>Starting molecule and product</label><br><br>
+
+                <strong>Select query type</strong> (for variable atoms):<br><br>
+                <input type="radio" id="exact" name="query_type" value="exact" checked>
+                <label for="exactSearchOption">Exact</label><br>
+                <input type="radio" id="substructure" name="query_type" value="substructure">
+                <label for="substructureSearchOption">Substructure</label><br>
+
+                <!--input type="radio" id="one_to_all" name="query_type" value="one_to_all" checked>
+                <label for="one_to_all">Exact</label><br>
+                <input type="radio" id="many_to_many" name="query_type" value="many_to_many">
+                <label for="many_to_many">Substructure</label><br-->
+
+                <!--input type="radio" id="global_one_to_all" name="query_type" value="global_one_to_all" disabled=disabled-->
+                <!--label for="global_one_to_all" style="color: #808080">Transform all fragments in molecule [future release]</label><br-->
+                <!--input type="radio" id="advanced" name="query_type" value="advanced">
+                <label for="advanced">Advanced</label><br-->
+
+                <input type="radio" id="first_order" name="transform_order" value="first_order" style="display: none" checked>
+
+                <!--p><strong>Select matched pair type</strong></p>
+                <input type="radio" id="first_order" name="transform_order" value="first_order" checked>
+                <label for="first_order">Normal</label><br>
+                <input type="radio" id="second_order" name="transform_order" value="second_order" disabled=disabled>
+                <label for="second_order" style="color: #808080">Second-order [future release]</label><br-->
+            </div>
+            <div class="selectionButtonsDiv">
+
+                <div>
+                    <div id="variableDiv" style="display:inline-block;">
+                        <strong>Highlight fragments</strong><br><br>
+                        <button id="setVariableButton" style="min-width:120px;">Set Variable<br>Atoms</button>
+                        <button id="clearVariableButton">Clear</button>
+                    </div>
+
+                    <div id="environmentDiv" style="display:inline-block; margin-left:15px;">
+                        <!--div style="color: #777777"><strong>(OPTIONAL): Select environment fragment</strong><br><br></div-->
+                        <br><br>
+                        <button id="setEnvironmentButton" style="min-width:120px;">Set Constant<br>Atoms</button>
+                        <button id="clearEnvironmentButton">Clear</button>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="dropdown" id="optDropdownHolder">
+                        <!--strong>Choose properties</strong><br><br-->
+                        <button onclick="showOptChoices()" class="dropbtn">Select<br>Properties  </button>
+                        <div id="optDropdown" class="dropdown-content">
+                            <pre>No properties have been loaded to the database.
+Please use mmpdb loadprops to load properties,
+then reload the page.</pre>
+                        </div>
+                    </div>
+                </div>
+
+                <br><br>
+                <button id="advancedSearchOptionsButton" onclick="toggle_advanced_options_visibility()">Advanced Options</button>
+
+                <div id="advancedOptionsDiv">
+                    <br><br>
+                    <label><strong>Number of atoms (non-H) in each variable fragment</strong></label>
+                    <br>
+                    <label>Min: </label>
+                    <input type="number" class="advancedFields" name="variable_min_heavies"/>
+                    <label>  Max: </label>
+                    <input type="number" class="advancedFields" name="variable_max_heavies"/>
+                    <br><br>
+                    <label><strong>Number of atoms (non-H) in each compound</strong></label>
+                    <br>
+                    <label>Min: </label>
+                    <input type="number" class="advancedFields" name="compound_min_heavies"/>
+                    <label>  Max: </label>
+                    <input type="number" class="advancedFields" name="compound_max_heavies"/>
+                    <br><br>
+                    <input type="radio" id="individual_transforms" name="aggregationType" value="individual_transforms" checked>
+                    <label for="individual_transforms">Show individual transforms</label><br>
+                    <input type="radio" id="group_by_fragment" name="aggregationType" value="group_by_fragment">
+                    <label for="group_by_fragment">Group transforms by fragment</label><br>
+                    <!--br>
+                    <label><strong>Hint:</strong> You can use the reaction arrow to specify starting material and product,<br>
+                    otherwise you are drawing a starting material by default.</label-->
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+
+    <input type="hidden" id="ketcher1_content"/>
+    <input type="hidden" id="ketcher2_content"/>
+
+    <input type="hidden" id="sketched_content"/>
+    <input type="hidden" id="sketched_molfile"/>
+    <input type="hidden" id="sketched_rxnfile"/>
+    <input type="hidden" id="sketched_molfile_mapped"/>
+    <input type="hidden" id="sketched_rxnfile_mapped"/>
+
+    <!--iframe src="" id="outputPlot" class="output-frame"></iframe-->
+    <!--iframe src="" id="outputPlot" class="output-frame" frameborder="0" scrolling="no" onload="resize_iframe(this);"></iframe-->
+    <!--iframe src="" id="outputPlot" class="output-frame" frameborder="0" scrolling="no" onload="resize_iframe(this);"></iframe-->
+    <div id="query_progress_div">
+        <br><br>
+        Query in progress
+        <br><br>
+    </div>
+    <button id="jump_to_results_button" onclick="jump_to_results()" style="display:none;"></button>
+    <iframe src="" id="outputPlot" class="output-frame" frameborder="0" scrolling="no"></iframe>
+    
+    <!--div style="float:left; width:100%; position:relative; top:10px">
+        <div style="width:100%;">
+            <iframe src="" id="outputPlot" class="output-frame" frameborder="0" scrolling="auto" onload="resize_iframe(this);"></iframe>
+        </div>
+    </div-->
+
+    <div style="clear: both;"></div>
+		
+</body>
+</html>

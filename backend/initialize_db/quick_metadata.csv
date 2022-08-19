@@ -1,0 +1,3 @@
+property_name	base	unit	display_name	display_base	display_unit	change_displayed
+CYP3A4	negative_log	M	CYP3A4_IC50_uM	raw	uM	fold-change
+hERG_pIC50	negative_log	M	hERG_IC50_uM	raw	uM	fold-change

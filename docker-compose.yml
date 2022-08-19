@@ -1,0 +1,40 @@
+services:
+  database:
+    build:
+      context: ./database
+    ports:
+      - 5432:5432
+    environment:
+      - POSTGRES_PASSWORD=default
+      - POSTGRES_USER=default
+      - POSTGRES_DB=default
+    networks:
+      - matcher-network
+  backend:
+    build:
+      context: ./backend
+    ports:
+      - 8001:8001
+    environment:
+      - POSTGRES_USER=default
+      - POSTGRES_PASSWORD=default
+      - POSTGRES_DB=default
+    depends_on:
+      - database
+    networks:
+      - matcher-network
+  frontend:
+    build:
+      context: ./frontend
+    ports:
+      - 8000:8000
+    environment:
+      - MATCHER_BACKEND_URL=http://backend:8001
+      - EXTERNAL_BACKEND_URL=http://localhost:8001
+      - EXTERNAL_FRONTEND_URL=http://localhost:8000
+    depends_on:
+      - backend
+    networks:
+      - matcher-network
+networks:
+  matcher-network:

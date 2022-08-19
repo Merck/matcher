@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+    <!--meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests" /-->
+	<title>Examples</title>
+	<link type="text/css" rel="stylesheet" href="/css/matcher.css" />
+	<script>
+
+        var backend_root = "localhost:8001";
+        var frontend_root = "localhost:8000";
+    
+    function startup() {
+        bind_image_links();
+    }
+
+    function bind_image_links() {
+        document.getElementById("link1").setAttribute("href", "./test");
+    }
+        
+	</script>
+</head>
+<!--body onload="startup();"-->
+<body>
+    <h1>Example Queries</h1>
+    <div>
+        <pre class="idea">This page shows examples of what kinds of searches are possible.</pre>
+        <br><br>
+        <pre class="idea"><strong>Example 1:</strong> <a href="./snap/1" target="_blank">Run search</a>
+Find all pairs <strong>where methoxy changes to a group attached via nitrogen to the red-colored core.</strong></pre>
+        <a href="./snap/1" target="_blank"><img class="example_img" src="./examples/1.png"></a>
+
+        <br><br><br><br>
+
+        <pre class="idea"><strong>Example 2:</strong> <a href="./snap/2" target="_blank">Run search</a>
+Find all pairs <strong>where hydrogen changes to methyl, on a carbon atom.</strong></pre>
+        <a href="./snap/2" target="_blank"><img class="example_img" src="./examples/2.png"></a>
+
+        <br><br><br><br>
+
+        <pre class="idea"><strong>Example 3:</strong> <a href="./snap/3" target="_blank">Run search</a>
+Find all pairs <strong>where hydrogen changes to anything, on this red substructure.</strong></pre>
+        <a href="./snap/3" target="_blank"><img class="example_img" src="./examples/3.png"></a>
+
+        <br><br><br><br>
+
+        <pre class="idea"><strong>Example 4:</strong> <a href="./snap/4" target="_blank">Run search</a>
+Find all pairs <strong>where hydrogen changes to methyl, on an aromatic carbon.</strong></pre>
+        <a href="./snap/4" target="_blank"><img class="example_img" src="./examples/4.png"></a>
+
+        <br><br><br><br>
+
+        <pre class="idea"><strong>Example 5:</strong> <a href="./snap/5" target="_blank">Run search</a>
+Find all pairs <strong>where hydrogen changes to anything, on the 4-position of a pyridyl substructure.</strong></pre>
+        <a href="./snap/5" target="_blank"><img class="example_img" src="./examples/5.png"></a>
+
+        <br><br><br><br>
+
+        <pre class="idea"><strong>Example 6:</strong> <a href="./snap/6" target="_blank">Run search</a>
+Find all pairs <strong>where hydrogen changes to anything, on an aromatic carbon, where both molecules in the pair have a carboxylic acid anywhere in the molecule.</strong></pre>
+        <a href="./snap/6" target="_blank"><img class="example_img" src="./examples/6.png"></a>
+
+        <br><br><br><br>
+
+        <pre class="idea"><strong>Example 7:</strong> <a href="./snap/7" target="_blank">Run search</a>
+Find all pairs <strong>that vary at the amide. Require <= 8 non-H atoms in the variable (green-highlighted) fragment. Group transforms by transformed fragment.</strong></pre>
+        <a href="./snap/7" target="_blank"><img class="example_img" src="./examples/7.png"></a>
+    </div>
+
+    <style>
+        .example_img {
+            width: 1200px;
+            height: auto;
+        }
+
+        .idea {
+            font-family: Arial, Helvetica, sans-serif;
+        }
+
+        h4 {
+            margin-top: 0;
+            margin-bottom: 0;
+        }
+    </style>
+		
+</body>
+</html>

@@ -1,0 +1,3 @@
+[submodule "mmpdb"]
+	path = backend/mmpdb
+	branch = opensource

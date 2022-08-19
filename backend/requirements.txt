@@ -1,0 +1,13 @@
+asyncpg==0.24.0
+fastapi==0.73.0
+orjson==3.6.0
+pandas==1.4.1
+pillow==8.3.1
+python-multipart==0.0.5
+rdkit-pypi==2021.3.5
+uvicorn==0.17.4
+# For building the mmpdb database
+psycopg2-binary==2.9.1
+numpy==1.22.2
+scipy==1.8.0
+ujson==5.1.0
