@@ -1,3 +1,9 @@
+Matcher is a tool for understanding how chemical structure optimization problems have been solved.
+
+Matcher enables deep control over searching structure/activity relationships (SAR) derived from large datasets, and takes the form of an accessible web application with simple deployment.
+
+Matcher is built around the [mmpdb](https://github.com/rdkit/mmpdb) platform for matched molecular pair (MMP) analysis. Matcher extends the mmpdb data model, introduces new search algorithms, provides a backend API for executing queries and fetching results, and provides a frontend user interface.
+
 # Table of Contents
 
 1. [Quick Start](#quick_start)
