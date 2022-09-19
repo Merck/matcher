@@ -1,6 +1,5 @@
 .idea
 *.pyc
-frontend/examples/*.png
 debug.log
 .ipynb_checkpoints/
 KRAS_210628_amines_wSoly_1.csv
