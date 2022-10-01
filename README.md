@@ -136,6 +136,8 @@ The matcher database is an extended mmpdb database, and is reverse-compatible wi
 
 For example, to run `mmpdb transform` with matcher's database, outputting results to `results.csv` within your local directory:
 
+First launch matcher as described in [Quick Start](#quick_start), then run this command:
+
 ```
 docker exec -it \
 "$(docker ps | grep 'matcher_backend' | awk '{ print $1 }')" \
