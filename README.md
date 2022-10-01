@@ -12,6 +12,7 @@ Matcher is built around the [mmpdb](https://github.com/rdkit/mmpdb) platform for
 4. [Use Different Data](#use_different_data)
 5. [Metadata Information](#metadata_info)
 6. [OpenAPI for Backend](#backend_OpenAPI)
+7. [Using mmpdb Commands](#mmpdb_commands)
 
 # Quick Start <a id="quick_start"></a>
 
@@ -128,3 +129,16 @@ converted to default. None means that the column value will be NULL in property_
 Matcher's backend API can be used for querying and gathering results, independently of the frontend, if desired.
 
 The backend API endpoints are documented in backend/openapi.json. This documentation can be viewed when the matcher application is running, at localhost:8001/docs
+
+# Using mmpdb Commands <a id="mmpdb_commands"></a>
+
+The matcher database is an extended mmpdb database, and is reverse-compatible with mmpdb commands.
+
+For example, to run `mmpdb transform` with matcher's database, outputting results to `results.csv` within your local directory:
+
+```
+docker exec -it \
+"$(docker ps | grep 'matcher_backend' | awk '{ print $1 }')" \
+conda run -n matcher-api \
+python /opt/mmpdb/mmpdb.py transform --smiles 'O=C1NC2=C(C=NC(OC)=N2)N=C1' 'database$5432$postgres' > results.csv
+```
