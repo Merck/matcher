@@ -31,13 +31,15 @@ logging.basicConfig(level=logging.INFO)
 username = os.getenv("POSTGRES_USER")
 password = os.getenv("POSTGRES_PASSWORD")
 database_name = os.getenv("POSTGRES_DB")
+database_hostname = os.getenv("POSTGRES_HOST")
+database_port = os.getenv("POSTGRES_PORT")
 
 
 async def get_matcher_conn(timeout=3600):
 
     conn = await asyncpg.connect(
-        host='database',
-        port=5432,
+        host=database_hostname,
+        port=database_port,
         database=database_name,
         user=username,
         password=password,

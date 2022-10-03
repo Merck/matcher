@@ -19,6 +19,8 @@ services:
       - POSTGRES_USER=default
       - POSTGRES_PASSWORD=default
       - POSTGRES_DB=default
+      - POSTGRES_HOST=database
+      - POSTGRES_PORT=5432
     depends_on:
       - database
     networks:
