@@ -1,5 +1,5 @@
-var backend_root = "http://localhost:8001";
-var frontend_root = "http://localhost:8000";
+var backend_root = "{{ external_backend_root }}";
+var frontend_root = "{{ external_frontend_root }}";
 var dash_path = frontend_root + '/dash/';
 
 // When the page initially loads, the Dash app submit button will be automatically fired, which is necessary for automatic query submission when a snapshot is loaded in via template
@@ -11,6 +11,7 @@ var query_id = parseInt("{{ query_id }}");
 query_id = (!isNaN(query_id) ? query_id : -1);
 var snapfilter_string = "{{ snapfilter_string }}";
 
+var schema = "{{ schema }}";
 var ketcher1 = undefined;
 var ketcher2 = undefined;
 
@@ -670,7 +671,11 @@ var property_metadata;
 function get_prop_options() {
 
     //return getRequest(backend_root + '/propertyNames/')
-    return getRequest(backend_root + '/propertyMetadata/')
+    let query_schema = "";
+    if (schema !== 'None') {
+        query_schema = "?schema=" + schema;
+    }
+    return getRequest(backend_root + '/propertyMetadata' + query_schema)
     .then(function(data) {
 
         property_metadata = data;

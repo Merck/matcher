@@ -529,7 +529,7 @@ def create_dash_app(dataframe = None, requests_pathname_prefix='/dash/', aggrega
         [Output('output_div', 'children')],
         [Input('pair_data', 'data')],
         [State('query_data', 'data'),
-        State('property_metadata', 'data')]
+        State('property_metadata', 'data'),]
     )
     def instantiate_output_elements(pair_data, query_data, property_metadata):
 
@@ -653,7 +653,8 @@ def create_dash_app(dataframe = None, requests_pathname_prefix='/dash/', aggrega
                 } for prop in initial_agg_prop_labels
             ]
         }
-        table_data = requests.post(backend_root + '/aggregate_transforms', data=json.dumps(agg_args))
+        schema = snapquery_dict['schema']
+        table_data = requests.post(backend_root + f'/aggregate_transforms?schema={schema}', data=json.dumps(agg_args))
         table_data = table_data.json()
         minmax = table_data['minmax']
         # The minmax columns were named within postgres, which restricts certain characters
@@ -1048,7 +1049,8 @@ def create_dash_app(dataframe = None, requests_pathname_prefix='/dash/', aggrega
             OPTIONAL_properties: parent.getProps('opt'),
             advanced_options: parent.getAdvancedOptions(),
             snapfilter_id: parent.snapfilter_id,
-            snapfilter_string: parent.snapfilter_string
+            snapfilter_string: parent.snapfilter_string,
+            schema: parent.schema
         }
 
         output = JSON.stringify(data);
@@ -1064,7 +1066,7 @@ def create_dash_app(dataframe = None, requests_pathname_prefix='/dash/', aggrega
     }
     """,
     [Output('input_data', 'data'),
-    Output('property_metadata', 'data')],
+    Output('property_metadata', 'data'),],
     [Input('submit_button', 'n_clicks')],
     prevent_initial_call=False
     )
@@ -1101,7 +1103,8 @@ def create_dash_app(dataframe = None, requests_pathname_prefix='/dash/', aggrega
             return [input_data, json.dumps({'query_id': input_data_dict['query_id']})]
 
         # Start the query and get an ID which we will use to poll the DB for existence of results over intervals
-        started_query = requests.post(backend_root + '/start_query', data = input_data)
+        schema = input_data_dict['schema']
+        started_query = requests.post(backend_root + f'/start_query?schema={schema}', data = input_data)
         started_query = json.loads(started_query.json())
 
         # If there were problems with input from UI, terminate here
@@ -1127,7 +1130,7 @@ def create_dash_app(dataframe = None, requests_pathname_prefix='/dash/', aggrega
         while elapsed < timeout:
 
             time.sleep(intervals[current_interval]['interval_time'])
-            query_status = requests.get(backend_root + f'/check_query/{query_id}')
+            query_status = requests.get(backend_root + f'/check_query/{query_id}?schema={schema}')
             query_status = json.loads(query_status.json())
 
             if query_status['finished'] == "True":
@@ -1145,7 +1148,7 @@ def create_dash_app(dataframe = None, requests_pathname_prefix='/dash/', aggrega
 
                     # If we loaded a snapshot that is not referencing a query_id in the DB, we need to associate snapquery_id and query_id here
                     if input_data_dict['snapquery_id'] != '':
-                        response = requests.get(backend_root + f"/bind_snapquery_to_results/{input_data_dict['snapquery_id']}?query_id={query_id}")
+                        response = requests.get(backend_root + f"/bind_snapquery_to_results/{input_data_dict['snapquery_id']}?query_id={query_id}&schema={schema}")
                     return [input_data, json.dumps({'query_id': query_id})]
 
             elapsed = time.perf_counter() - start_time
@@ -1247,7 +1250,8 @@ def create_dash_app(dataframe = None, requests_pathname_prefix='/dash/', aggrega
         # In theory we could track if the snapfilter_id changed after snap page load, and reuse the id if not
         new_snapshot['snapfilter_id'] = ''
 
-        new_snapshot_id = requests.post(backend_root + '/snap_write', data=json.dumps(new_snapshot))
+        schema = snapquery_dict['schema']
+        new_snapshot_id = requests.post(backend_root + f'/snap_write?schema={schema}', data=json.dumps(new_snapshot))
         
         # new_snapshot contains all the information needed to reproduce a query
         #logging.info(json.dumps(new_snapshot))
@@ -1266,7 +1270,9 @@ def create_dash_app(dataframe = None, requests_pathname_prefix='/dash/', aggrega
     def spawn_and_copy_snapshot_link(*inputs):
 
         new_snapshot_id = get_new_snapshot_id(inputs)
-        content = external_frontend_root + '/snap/' + new_snapshot_id
+        schema = json.loads(inputs[-1])['schema']
+        query_schema = f"?schema={schema}" if schema != "None" else ""
+        content = external_frontend_root + '/snap/' + new_snapshot_id + query_schema
 
         # dcc.Clipboard expects a list for some reason, but will copy the single element in this list to the clipboard
         return [content]
@@ -1285,7 +1291,8 @@ def create_dash_app(dataframe = None, requests_pathname_prefix='/dash/', aggrega
             'query_id': query_id,
             'query': json.loads(query_data)
         }
-        all_raw_data = requests.post(backend_root + '/get_all_raw_data', data=json.dumps(data))
+        schema = data['query']['schema']
+        all_raw_data = requests.post(backend_root + f'/get_all_raw_data?schema={schema}', data=json.dumps(data))
 
         all_raw_data = all_raw_data.json()
         columns = all_raw_data['column_headers']
@@ -1432,7 +1439,8 @@ def create_dash_app(dataframe = None, requests_pathname_prefix='/dash/', aggrega
             ]
         }
 
-        table_data = requests.post(backend_root + '/aggregate_transforms', data=json.dumps(agg_args))
+        schema = snapquery_dict['schema']
+        table_data = requests.post(backend_root + f'/aggregate_transforms?schema={schema}', data=json.dumps(agg_args))
         table_data = table_data.json()
         minmax = table_data['minmax']
         # The minmax columns were named within postgres, which restricts certain characters
@@ -1823,7 +1831,8 @@ def create_dash_app(dataframe = None, requests_pathname_prefix='/dash/', aggrega
                 'y_data': map_axis_labels_to_API_args(yaxis_column_name, property_metadata=property_metadata)
             }
 
-            plot_data = requests.post(backend_root + '/get_plot_data', data=json.dumps(plot_args))
+            schema = snapquery_dict['schema']
+            plot_data = requests.post(backend_root + f'/get_plot_data?schema={schema}', data=json.dumps(plot_args))
             plot_data = plot_data.json()
 
             columns = rename_column_headers(plot_data['column_headers'], property_metadata=property_metadata)
@@ -2022,6 +2031,7 @@ def create_dash_app(dataframe = None, requests_pathname_prefix='/dash/', aggrega
         query_id = json.loads(pair_data)['query_id']
 
         snapquery_dict = json.loads(query_data)
+        schema = snapquery_dict['schema']
         all_props = snapquery_dict["REQUIRED_properties"].split(",") + snapquery_dict["OPTIONAL_properties"].split(",")
         prop_dicts = get_prop_labels(all_props, property_metadata=property_metadata)
         prop_dicts = {prop_dict['prop']: prop_dict for prop_dict in prop_dicts}
@@ -2050,7 +2060,7 @@ def create_dash_app(dataframe = None, requests_pathname_prefix='/dash/', aggrega
                 pairs = pairs[0:50]
 
             data['construct_id_pairs'] = pairs
-            pair_data = requests.post(backend_root + '/get_pair_data', data=json.dumps(data))
+            pair_data = requests.post(backend_root + f'/get_pair_data?schema={schema}', data=json.dumps(data))
             pair_data = pair_data.json()
             columns = rename_column_headers(pair_data['column_headers'], property_metadata=property_metadata)
             df = pd.DataFrame(pair_data['rows'], columns=columns)
@@ -2064,7 +2074,7 @@ def create_dash_app(dataframe = None, requests_pathname_prefix='/dash/', aggrega
             single_pair = clickData['points'][0]['customdata']
 
             data['construct_id_pairs'] = [single_pair]
-            pair_data = requests.post(backend_root + '/get_pair_data', data=json.dumps(data))
+            pair_data = requests.post(backend_root + f'/get_pair_data?schema={schema}', data=json.dumps(data))
             pair_data = pair_data.json()
             columns = rename_column_headers(pair_data['column_headers'], property_metadata=property_metadata)
             df = pd.DataFrame(pair_data['rows'], columns=columns)
@@ -2138,7 +2148,10 @@ def create_dash_app(dataframe = None, requests_pathname_prefix='/dash/', aggrega
             return [{'content':"No rows were selected. Click the checkboxes next to desired rows.", 'filename': "no_rows_selected_error.txt"}]
 
         new_snapshot_id = get_new_snapshot_id(inputs)
-        link_address = external_frontend_root + '/snap/' + new_snapshot_id
+
+        schema = json.loads(inputs[-2])['schema']
+        query_schema = f"?schema={schema}" if schema != "None" else ""
+        link_address = external_frontend_root + '/snap/' + new_snapshot_id + query_schema
 
         data = {
             'query': json.loads(query_data),
@@ -2146,7 +2159,7 @@ def create_dash_app(dataframe = None, requests_pathname_prefix='/dash/', aggrega
             'row_data': selected_row_data,
             'link_address': link_address,
         }
-        sdf_string = requests.post(backend_root + '/enumerate', data=json.dumps(data)).json()
+        sdf_string = requests.post(backend_root + f'/enumerate?schema={schema}', data=json.dumps(data)).json()
 
         if sdf_string == 'wildcards_in_core_error':
             return [{'content':"Wildcard atoms are not currently supported in the enumerated core (nonvariable part), because they cause problems during enumeration", 'filename': "wildcards_in_core_error.txt"}]
