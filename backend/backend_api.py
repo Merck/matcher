@@ -35,7 +35,7 @@ database_hostname = os.getenv("POSTGRES_HOST")
 database_port = os.getenv("POSTGRES_PORT")
 
 
-async def get_matcher_conn(timeout=3600):
+async def get_matcher_conn(schema='public', timeout=3600):
 
     conn = await asyncpg.connect(
         host=database_hostname,
@@ -45,6 +45,8 @@ async def get_matcher_conn(timeout=3600):
         password=password,
         timeout=timeout
     )
+    if schema not in ["public", "None", ""]:
+        await conn.execute(f"SET search_path={schema}")
     return conn
 
 
@@ -247,7 +249,7 @@ def parse_query_input(query_input: QueryInput):
 
 
 @app.post("/async_query_v3_backend", deprecated=True)
-async def async_query_v3_backend(query: QueryInput):
+async def async_query_v3_backend(query: QueryInput, schema: str = 'public'):
     """
     Deprecated, replaced with /start_query and /check_query
     """
@@ -275,7 +277,7 @@ async def async_query_v3_backend(query: QueryInput):
     req, opt = parsed_query["REQUIRED_properties"], parsed_query["OPTIONAL_properties"]
     num_props = len(req) + len(opt)
 
-    conn = await get_matcher_conn()
+    conn = await get_matcher_conn(schema=schema)
 
     # Make sure we close the connection even if an exception is raised
     try:
@@ -319,7 +321,7 @@ async def async_query_v3_backend(query: QueryInput):
 
 
 @app.post("/start_query")
-async def start_query(query: QueryInput, background_tasks: BackgroundTasks):
+async def start_query(query: QueryInput, background_tasks: BackgroundTasks, schema: str = 'public'):
     """
     Input structure / property constraints, and receive a query_id that will be used for getting results. The query is then initiated asynchronously.
 
@@ -371,7 +373,7 @@ async def start_query(query: QueryInput, background_tasks: BackgroundTasks):
         })
     observations["no_results"] = "False"
 
-    conn = await get_matcher_conn()
+    conn = await get_matcher_conn(schema=schema)
     try:
         async with conn.transaction():
             new_query_id = await conn.fetch("INSERT INTO query (inserted_at) VALUES (clock_timestamp()) RETURNING id")
@@ -380,11 +382,11 @@ async def start_query(query: QueryInput, background_tasks: BackgroundTasks):
         await conn.close()
 
     parsed_query["query_id"] = new_query_id
-    background_tasks.add_task(run_query, parsed_query)
+    background_tasks.add_task(run_query, parsed_query, schema)
     return json.dumps({'query_id': new_query_id})
 
 
-async def run_query(parsed_query):
+async def run_query(parsed_query, schema):
 
     req, opt = parsed_query["REQUIRED_properties"], parsed_query["OPTIONAL_properties"]
     num_props = len(req) + len(opt)
@@ -392,7 +394,7 @@ async def run_query(parsed_query):
     # If num_pairs==1 when we enter the finally block, then we know an exception occurred, and can communicate that back to the client
     num_pairs = -1
 
-    conn = await get_matcher_conn()
+    conn = await get_matcher_conn(schema=schema)
     # Make sure we close the connection even if an exception is raised
     try:
         # Commit when we finish the async with conn.transaction() block, rollback if exception arises before then
@@ -440,7 +442,7 @@ async def run_query(parsed_query):
 
 
 @app.get("/check_query/{query_id}")
-async def check_query(query_id: int):
+async def check_query(query_id: int, schema: str = 'public'):
     """
     Monitor query progress.
 
@@ -454,7 +456,7 @@ async def check_query(query_id: int):
     - **finished_with_no_results**: will evaluate to "True" if no results were found and saved in DB by the query, otherwise "False"
     """
 
-    conn = await get_matcher_conn()
+    conn = await get_matcher_conn(schema=schema)
     try:
         sample_rows = await conn.fetch(f"SELECT rule_id, use_original_direction, from_construct_id, to_construct_id FROM query_result WHERE query_id={query_id} LIMIT 1")
     finally:
@@ -476,7 +478,7 @@ async def check_query(query_id: int):
 
 
 @app.post("/get_all_raw_data")
-async def get_all_raw_data(inputs: GetAllRawData):
+async def get_all_raw_data(inputs: GetAllRawData, schema: str = 'public'):
     """
     Retrieve all results for a specific query, after query has finished as indicated by /check_query.
 
@@ -496,7 +498,7 @@ async def get_all_raw_data(inputs: GetAllRawData):
     statement = search_algorithm.get_all_raw_data_statement(inputs, req, opt)
     logging.info(statement)
 
-    conn = await get_matcher_conn()
+    conn = await get_matcher_conn(schema=schema)
 
     try:
         num_pairs = await conn.fetch(f"SELECT count(*) FROM query_result WHERE query_result.query_id = {inputs.query_id}")
@@ -538,7 +540,7 @@ async def get_all_raw_data(inputs: GetAllRawData):
 
 
 @app.post("/aggregate_transforms")
-async def aggregate_transforms(filters: AggregationParameters):
+async def aggregate_transforms(filters: AggregationParameters, schema: str = 'public'):
     """
     Obtain MMP transform-level data, including statistics, e.g. median change in a specified property for each MMP transform found by the query. The matcher frontend uses this data to populate the table of transforms in the frontend results.
 
@@ -573,7 +575,7 @@ async def aggregate_transforms(filters: AggregationParameters):
     - **grouped_by_environment**: false or true: whether or not the transforms are grouped by environment. Use this value as input to /get_plot_data endpoint. Only relevant for some queries with multiple points of attachment between variable and environment atoms, depending on symmetry
     """
 
-    conn = await get_matcher_conn()
+    conn = await get_matcher_conn(schema=schema)
 
     try:
         use_environment = await conn.fetch(f"SELECT count(query_result.from_smiles_env) AS count FROM query_result WHERE query_result.query_id = {filters.query_id} AND query_result.from_smiles_env IS NOT NULL")
@@ -621,7 +623,7 @@ async def aggregate_transforms(filters: AggregationParameters):
 
 
 @app.post("/get_plot_data")
-async def get_plot_data(filters: PlotParameters):
+async def get_plot_data(filters: PlotParameters, schema: str = 'public'):
     """
     Get data for all MMPs associated with specific transform(s) or variable fragment(s).
     
@@ -665,7 +667,7 @@ async def get_plot_data(filters: PlotParameters):
     statement = search_algorithm.get_plot_data_statement(filters, property_metadata=property_metadata)
     logging.info(statement)
 
-    conn = await get_matcher_conn()
+    conn = await get_matcher_conn(schema=schema)
 
     try:
         async with conn.transaction():
@@ -690,7 +692,7 @@ async def get_plot_data(filters: PlotParameters):
 
 
 @app.post("/get_pair_data")
-async def get_pair_data(pairs: PairsCondensed):
+async def get_pair_data(pairs: PairsCondensed, schema: str = 'public'):
     """
     Get data for specific MMPs
 
@@ -720,7 +722,7 @@ async def get_pair_data(pairs: PairsCondensed):
     statement = search_algorithm.get_pair_data_statement(pairs, property_metadata=property_metadata)
     logging.info(statement)
 
-    conn = await get_matcher_conn()
+    conn = await get_matcher_conn(schema=schema)
 
     try:
         async with conn.transaction():
@@ -745,7 +747,7 @@ async def get_pair_data(pairs: PairsCondensed):
 
 
 @app.post("/enumerate")
-async def enumerate_designs(data: EnumerationData):
+async def enumerate_designs(data: EnumerationData, schema: str = 'public'):
     """
     Apply specific transforms from query results to the query input structures, to enumerate new designs based on transforms of interest.
 
@@ -786,7 +788,7 @@ async def enumerate_designs(data: EnumerationData):
             transform_data = [{'transform_id': transform_id, 'from_smiles': None, 'to_smiles': transform_id, 'environment_smarts' : None} for transform_id in transform_ids]
     else:
         # We need to lookup from/to smiles and potentially environments
-        conn = await get_matcher_conn()
+        conn = await get_matcher_conn(schema=schema)
         try:
             setparam = await conn.fetch("SET join_collapse_limit=100")
             setparam = await conn.fetch("SET from_collapse_limit=100")
@@ -866,7 +868,7 @@ async def enumerate_designs(data: EnumerationData):
 
 
 @app.get("/snap_read/{snapshot_id}", response_class=ORJSONResponse)
-async def snap_read(snapshot_id: str):
+async def snap_read(snapshot_id: str, schema: str = 'public'):
     """
     Read snapshot from database. The snapshot refers to input state and output filter state for a query. With this data, we can recreate input + output for a query of interest.
 
@@ -876,7 +878,7 @@ async def snap_read(snapshot_id: str):
     """
 
     try:
-        conn = await get_matcher_conn()
+        conn = await get_matcher_conn(schema=schema)
 
         statement = f"""
 SELECT 
@@ -921,14 +923,14 @@ WHERE
 
 
 @app.post("/snap_write", response_class=ORJSONResponse)
-async def snap_write(s: QueryInput):
+async def snap_write(s: QueryInput, schema: str = 'public'):
     """
     Write snapshot to database. The snapshot refers to input state and output filter state for a query. With this data, we can recreate input + output for a query of interest.
 
     This way, users can save and share results simply by passing around a unique link containing the {snapshot_id} (in combination with functionality provided by the frontend API)
     """
 
-    conn = await get_matcher_conn()
+    conn = await get_matcher_conn(schema)
 
     try:
         async with conn.transaction():
@@ -1005,7 +1007,7 @@ RETURNING id
 
 
 @app.get("/bind_snapquery_to_results/{snapquery_id}")
-async def bind_snapquery_to_results(snapquery_id: int, query_id: int):
+async def bind_snapquery_to_results(snapquery_id: int, query_id: int, schema: str = 'public'):
     """
     When the same query is run multiple times, it is wasteful to repeat the actual query, both in terms of time and disk space.
 
@@ -1014,7 +1016,7 @@ async def bind_snapquery_to_results(snapquery_id: int, query_id: int):
     Here we are just associating the snapshot data with the query_id of results in the database. When the frontend next sees a snapshot with this snapquery_id, the frontend will skip the query and instead load cached results.
     """
 
-    conn = await get_matcher_conn()
+    conn = await get_matcher_conn(schema=schema)
 
     try:
         async with conn.transaction():
@@ -1025,7 +1027,7 @@ async def bind_snapquery_to_results(snapquery_id: int, query_id: int):
     return {'success': True}
 
 @app.get("/propertyNames/", response_class=ORJSONResponse)
-async def propertyNames():
+async def propertyNames(schema: str = 'public'):
     """
     This endpoint is used to populate the properties menu in the frontend input form.
 
@@ -1036,7 +1038,7 @@ async def propertyNames():
         - **display_name**: string, name of property to be displayed to users in frontend (if different from property_name, as defined in property metadata)
     """
 
-    conn = await get_matcher_conn()
+    conn = await get_matcher_conn(schema=schema)
     try:
         names = await conn.fetch("SELECT property_name.name, property_name.display_name FROM property_name")
     finally:
@@ -1047,7 +1049,7 @@ async def propertyNames():
     return props
 
 @app.get("/propertyMetadata/", response_class=ORJSONResponse)
-async def propertyMetadata():
+async def propertyMetadata(schema: str = 'public'):
     """
     This function is needed for obtaining property metadata that was written to the database using the mmpdb loadprops command.
 
@@ -1063,7 +1065,7 @@ async def propertyMetadata():
         - **change_displayed**: preferred change type, for compound property values of compounds in an MMP, to display to users in frontend
     """
 
-    conn = await get_matcher_conn()
+    conn = await get_matcher_conn(schema=schema)
     try:
         results = await conn.fetch("SELECT name, base, unit, display_name, display_base, display_unit, change_displayed FROM property_name")
     finally:
