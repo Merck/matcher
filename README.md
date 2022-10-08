@@ -142,5 +142,5 @@ First launch matcher as described in [Quick Start](#quick_start), then run this 
 docker exec -it \
 "$(docker ps | grep 'matcher_backend' | awk '{ print $1 }')" \
 conda run -n matcher-api \
-python /opt/mmpdb/mmpdb.py transform --smiles 'O=C1NC2=C(C=NC(OC)=N2)N=C1' 'database$5432$postgres' > results.csv
+python /opt/mmpdb/mmpdb.py transform --smiles 'O=C1NC2=C(C=NC(OC)=N2)N=C1' 'public$postgres' > results.csv
 ```

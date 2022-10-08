@@ -19,9 +19,10 @@ else
         # Standard mmpdb command for generating fragments, except we defined new 'matcher_alpha' fragmentation criteria
         conda run --no-capture-output -n matcher-api python ./mmpdb/mmpdb.py fragment "${structures}" -o "${fragments}" --cut-smarts 'matcher_alpha' && \
         # Standard mmpdb command for identifying MMPs and loading data to DB, except we introduced postgres support, and extended the data model
-        conda run --no-capture-output -n matcher-api python ./mmpdb/mmpdb.py index "${fragments}" -o 'database$5432$postgres' && \
+        # The db connection string takes the form of 'schema$postgres', with the rest of the connection parameters being set as environment variables in the docker-compose.yml file
+        conda run --no-capture-output -n matcher-api python ./mmpdb/mmpdb.py index "${fragments}" -o 'public$postgres' && \
         # Standard mmpdb command for loading property data to DB, except we introduced postgres support and ability to add property metadata
-        conda run --no-capture-output -n matcher-api python ./mmpdb/mmpdb.py loadprops -p "${properties}" --metadata "${metadata}" 'database$5432$postgres' && \
+        conda run --no-capture-output -n matcher-api python ./mmpdb/mmpdb.py loadprops -p "${properties}" --metadata "${metadata}" 'public$postgres' && \
 
         # Here we load JSON representations of query input states, to a table in the database
         # Each input query will have a unique integer snapshot_id assigned, starting from 1, going up to the n total number of example query inputs that we write to DB
