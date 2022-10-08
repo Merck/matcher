@@ -46,6 +46,17 @@ async def get_matcher_conn(schema='public', timeout=3600):
         timeout=timeout
     )
     if schema not in ["public", "None", ""]:
+        # asyncpg doesn't let us use parameters in SET statements, so we need another mechanism to prevent SQL injection
+        # Therefore, here we validate the schema (which comes from an API query parameter),
+        #  against schema in the DB
+        valid_schemas = await conn.fetch("""
+SELECT schema_name
+FROM information_schema.schemata
+WHERE schema_name NOT IN ('information_schema', 'pg_catalog')
+""")
+        valid_schemas = set(row['schema_name'] for row in valid_schemas)
+        assert schema in valid_schemas
+
         await conn.execute(f"SET search_path={schema}")
     return conn
 
