@@ -1,5 +1,10 @@
 #!/bin/bash
 
+# To access specific schema from a browser client, use the query variable 'schema', e.g. localhost:8000/?schema=public
+# By default, the root path (e.g. localhost:8000/) will redirect to the 'public' schema
+# For SQL security reasons, to enable creation of alternative schema names other than 'public', you must uncomment the "CREATE SCHEMA" line in matcher/backend/mmpdb/mmpdblib/schema.py 
+postgres_schema="public"
+
 structures=./initialize_db/test_structures.smi
 fragments=./initialize_db/test_structures.fragments
 properties=./initialize_db/test_props.csv
@@ -20,9 +25,9 @@ else
         conda run --no-capture-output -n matcher-api python ./mmpdb/mmpdb.py fragment "${structures}" -o "${fragments}" --cut-smarts 'matcher_alpha' && \
         # Standard mmpdb command for identifying MMPs and loading data to DB, except we introduced postgres support, and extended the data model
         # The db connection string takes the form of 'schema$postgres', with the rest of the connection parameters being set as environment variables in the docker-compose.yml file
-        conda run --no-capture-output -n matcher-api python ./mmpdb/mmpdb.py index "${fragments}" -o 'public$postgres' && \
+        conda run --no-capture-output -n matcher-api python ./mmpdb/mmpdb.py index "${fragments}" -o "$postgres_schema\$postgres" && \
         # Standard mmpdb command for loading property data to DB, except we introduced postgres support and ability to add property metadata
-        conda run --no-capture-output -n matcher-api python ./mmpdb/mmpdb.py loadprops -p "${properties}" --metadata "${metadata}" 'public$postgres' && \
+        conda run --no-capture-output -n matcher-api python ./mmpdb/mmpdb.py loadprops -p "${properties}" --metadata "${metadata}" "$postgres_schema\$postgres" && \
 
         # Here we load JSON representations of query input states, to a table in the database
         # Each input query will have a unique integer snapshot_id assigned, starting from 1, going up to the n total number of example query inputs that we write to DB
@@ -30,7 +35,7 @@ else
         # We embed these example queries in the "Run Example Query" page at http://localhost:8000/examples
         # To generate the required JSON for example_queries.json, print out the JSON that is passed to backend_api.snap_write upon clicking the "Copy Shareable Link" button in Matcher frontend,
         #   then either delete the 'query_id' key/value, or change the 'query_id' value to 'NULL'
-        conda run --no-capture-output -n matcher-api python ./initialize_db/load_example_queries.py "${example_queries}" && \
+        conda run --no-capture-output -n matcher-api python ./initialize_db/load_example_queries.py "${example_queries}" $postgres_schema && \
         touch "${COMPLETION_FILE}"
     } || {
         touch "${FAILURE_FILE}"

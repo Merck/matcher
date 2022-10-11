@@ -57,7 +57,8 @@ WHERE schema_name NOT IN ('information_schema', 'pg_catalog')
         valid_schemas = set(row['schema_name'] for row in valid_schemas)
         assert schema in valid_schemas
 
-        await conn.execute(f"SET search_path={schema}")
+        # Need to include public schema in search_path for rdkit cartridge to work
+        await conn.execute(f"SET search_path={schema}, public")
     return conn
 
 
@@ -591,6 +592,7 @@ async def aggregate_transforms(filters: AggregationParameters, schema: str = 'pu
     try:
         use_environment = await conn.fetch(f"SELECT count(query_result.from_smiles_env) AS count FROM query_result WHERE query_result.query_id = {filters.query_id} AND query_result.from_smiles_env IS NOT NULL")
         use_environment = True if use_environment[0]['count'] > 0 else False
+        property_metadata = await get_property_metadata(schema=schema, conn=conn, close_conn=False)
         statement = search_algorithm.aggregate_transforms_v2(filters, use_environment, property_metadata=property_metadata)
         logging.info('aggregation statement:')
         logging.info(statement)
@@ -675,10 +677,11 @@ async def get_plot_data(filters: PlotParameters, schema: str = 'public'):
     - **rows**: array of arrays (i.e., rows) with elements matching the above column headers, one row per MMP
     """
 
+    conn = await get_matcher_conn(schema=schema)
+
+    property_metadata = await get_property_metadata(schema=schema, conn=conn, close_conn=False)
     statement = search_algorithm.get_plot_data_statement(filters, property_metadata=property_metadata)
     logging.info(statement)
-
-    conn = await get_matcher_conn(schema=schema)
 
     try:
         async with conn.transaction():
@@ -730,10 +733,11 @@ async def get_pair_data(pairs: PairsCondensed, schema: str = 'public'):
     - **rows**: array of arrays (i.e., rows) with elements matching the above column headers, one row per MMP
     """
 
+    conn = await get_matcher_conn(schema=schema)
+
+    property_metadata = await get_property_metadata(schema=schema, conn=conn, close_conn=False)
     statement = search_algorithm.get_pair_data_statement(pairs, property_metadata=property_metadata)
     logging.info(statement)
-
-    conn = await get_matcher_conn(schema=schema)
 
     try:
         async with conn.transaction():
@@ -1060,7 +1064,7 @@ async def propertyNames(schema: str = 'public'):
     return props
 
 @app.get("/propertyMetadata/", response_class=ORJSONResponse)
-async def propertyMetadata(schema: str = 'public'):
+async def get_property_metadata(schema: str = 'public', conn=None, close_conn=True):
     """
     This function is needed for obtaining property metadata that was written to the database using the mmpdb loadprops command.
 
@@ -1076,22 +1080,18 @@ async def propertyMetadata(schema: str = 'public'):
         - **change_displayed**: preferred change type, for compound property values of compounds in an MMP, to display to users in frontend
     """
 
-    conn = await get_matcher_conn(schema=schema)
+    # When the frontend is calling this endpoint, conn should be None
+    # When the backend is calling this endpoint, for current use cases, we already have a conn with a defined schema name, so avoid making another conn
+    if conn is None:
+        conn = await get_matcher_conn(schema=schema)
     try:
         results = await conn.fetch("SELECT name, base, unit, display_name, display_base, display_unit, change_displayed FROM property_name")
     finally:
-        await conn.close()
+        if close_conn == True:
+            await conn.close()
 
     metadata = {row['name'] : dict(row) for row in results}
     return metadata
-
-property_metadata = {}
-# This needs to be run if new properties are added to the database, or if the property metadata is changed in the property_name table
-@app.on_event("startup")
-async def initializePropertyMetadata():
-    global property_metadata
-    property_metadata = await propertyMetadata()
-    return {'success'}
 
 @app.get("/")
 async def root():
