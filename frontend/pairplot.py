@@ -417,7 +417,7 @@ def rename_column_headers(headers, minmax=False, property_metadata={}):
     renamed = []
     rename_map = {'rule_id': 'id', 'from_smiles':'FROM', 'from_smiles_env':'FROM', 'from_smiles_array':'FROM', 'from_smiles_env_array':'FROM',
         'to_smiles':'TO', 'to_smiles_env':'TO', 'pair_count':'pairs', 'transform_count': 'transforms'}
-    original_case_names = tuple(property_metadata.keys())
+    original_case_names = sorted(property_metadata.keys(), key=len, reverse=True)
 
     for header in headers:
         for name in original_case_names:
@@ -427,6 +427,10 @@ def rename_column_headers(headers, minmax=False, property_metadata={}):
                     header = header.replace(name.lower(), property_metadata[name]['display_name'])
                 elif minmax == True:
                     header = header.replace(name.lower(), property_metadata[name]['display_name'].lower())
+
+                # Only use the longest name replacement, prevent further replacement by substrings of the longest name
+                #  above, we sorted original_case_names to have the longest names first
+                break
         if header in rename_map:
             renamed.append(rename_map[header])
         elif 'fold_change' in header:
