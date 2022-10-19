@@ -893,7 +893,9 @@ def permute_variables_constant(variable1=None, variable2=None, constant=None, ha
                 isotope = atom.GetIsotope()
                 atom.SetAtomicNum(vc_map[isotope])
                 atom.SetIsotope(0)
-        else:
+        elif constant is None:
+            # Relevant when constant is completely detached from variable
+            # In such a case, vc_map will be empty because no variable atoms were touching constant, but there could still be a constant that we want to search with, so we check if it's None
             constant_permutations = None
             
         if variable1 and variable2 and vc_map:
