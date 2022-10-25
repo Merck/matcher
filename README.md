@@ -16,7 +16,9 @@ Matcher is built around the [mmpdb](https://github.com/rdkit/mmpdb) platform for
 
 # Quick Start <a id="quick_start"></a>
 
-Clone this repository, navigate to the parent matcher directory, then execute:
+Clone this repository, and the mmpdb submodule (with `git submodule init` and `git submodule update`).
+
+Navigate to the parent matcher directory, then execute:
 
 ```
 docker-compose up
