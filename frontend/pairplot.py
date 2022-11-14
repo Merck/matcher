@@ -476,6 +476,19 @@ def map_colors_to_ids(aggregation_type, df, environment_included):
                     colors_mapped_to_ids[row_id]['from_env_array'] = df.iloc[row_idx]['FROM']
     return colors_mapped_to_ids
 
+def get_range_filter_args(rf_names, min_rfs, max_rfs, display_name_to_property_name):
+    rf_args = []
+    for name, rf_min, rf_max in zip(rf_names, min_rfs, max_rfs):
+        assert name[0:2] in ('A_', 'B_')
+        compound, display_name_prop = name.split('_', 1)
+        # e.g. converting display_name_prop='CYP3A4_IC50_uM' to value in DB column property_name.name='CYP3A4'
+        prop = display_name_to_property_name[display_name_prop]
+        if rf_min not in [None, 'None']:
+            rf_args.append({'compound': compound, 'property_name': prop, 'operator': '>=', 'value': rf_min})
+        if rf_max not in [None, 'None']:
+            rf_args.append({'compound': compound, 'property_name': prop, 'operator': '<=', 'value': rf_max})
+    return rf_args
+
 
 def create_dash_app(dataframe = None, requests_pathname_prefix='/dash/', aggregation_type=None, snapquery_dict=None, snapfilter_dict=None, flask_server=None):
 
@@ -593,23 +606,15 @@ def create_dash_app(dataframe = None, requests_pathname_prefix='/dash/', aggrega
             range_filters_list = snapfilter_list[5].split('@')
             range_filters_dict = {}
             if range_filters_list != ['']:
-                for rf_name_min_max in range_filters_list:
-                    rf_name, rf_min, rf_max = rf_name_min_max.split(',')
-                    
-                    # for getting data from DB
-                    compound, display_name_prop = rf_name.split('_', 1)
-                    # e.g. converting display_name_prop='CYP3A4_IC50_uM' to value in DB column property_name.name='CYP3A4'
-                    prop = display_name_to_property_name[display_name_prop]
-                    if rf_min not in ['None', None]:
-                        rf_args.append({'compound': compound, 'property_name': prop, 'operator': '>=', 'value': rf_min})
-                    if rf_max not in ['None', None]:
-                        rf_args.append({'compound': compound, 'property_name': prop, 'operator': '<=', 'value': rf_max})
-
+                rf_names, min_rfs, max_rfs = [0]*len(range_filters_list), [0]*len(range_filters_list), [0]*len(range_filters_list)
+                for i, rf_name_min_max in enumerate(range_filters_list):
+                    rf_names[i], min_rfs[i], max_rfs[i] = rf_name_min_max.split(',')
                     # for applying filter values to UI elements
-                    range_filters_dict[rf_name] = {
-                        'min': float(rf_min) if rf_min != 'None' else None,
-                        'max': float(rf_max) if rf_max != 'None' else None,
+                    range_filters_dict[rf_names[i]] = {
+                        'min': float(min_rfs[i]) if min_rfs[i] != 'None' else None,
+                        'max': float(max_rfs[i]) if max_rfs[i] != 'None' else None,
                     }
+                rf_args = get_range_filter_args(rf_names, min_rfs, max_rfs, display_name_to_property_name)
 
             snapfilter = {
                 'default_x_label': snapfilter_list[0],
@@ -1426,16 +1431,7 @@ def create_dash_app(dataframe = None, requests_pathname_prefix='/dash/', aggrega
             if x_name in prop_dicts[prop].values() or y_name in prop_dicts[prop].values():
                 selected_props.add(prop)
 
-        rf_args = []
-        for name, rf_min, rf_max in zip(rf_names, min_rfs, max_rfs):
-            assert name[0:2] in ('A_', 'B_')
-            compound, display_name_prop = name.split('_', 1)
-            # e.g. converting display_name_prop='CYP3A4_IC50_uM' to value in DB column property_name.name='CYP3A4'
-            prop = display_name_to_property_name[display_name_prop]
-            if rf_min is not None:
-                rf_args.append({'compound': compound, 'property_name': prop, 'operator': '>=', 'value': rf_min})
-            if rf_max is not None:
-                rf_args.append({'compound': compound, 'property_name': prop, 'operator': '<=', 'value': rf_max})
+        rf_args = get_range_filter_args(rf_names, min_rfs, max_rfs, display_name_to_property_name)
 
         agg_args = {
             'query_id': query_id,
@@ -1826,15 +1822,7 @@ def create_dash_app(dataframe = None, requests_pathname_prefix='/dash/', aggrega
                     showlegend=False,
                 ))
         else:
-            rf_args = []
-            for name, rf_min, rf_max in zip(rf_names, min_rfs, max_rfs):
-                compound, display_name_prop = name.split('_', 1)
-                # e.g. converting display_name_prop='CYP3A4_IC50_uM' to value in DB column property_name.name='CYP3A4'
-                prop = display_name_to_property_name[display_name_prop]
-                if rf_min is not None:
-                    rf_args.append({'compound': compound, 'property_name': prop, 'operator': '>=', 'value': rf_min})
-                if rf_max is not None:
-                    rf_args.append({'compound': compound, 'property_name': prop, 'operator': '<=', 'value': rf_max})
+            rf_args = get_range_filter_args(rf_names, min_rfs, max_rfs, display_name_to_property_name)
 
             plot_args = {
                 'query_id': query_id,
