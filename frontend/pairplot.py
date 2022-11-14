@@ -495,6 +495,7 @@ def create_dash_app(dataframe = None, requests_pathname_prefix='/dash/', aggrega
             dcc.Store(id='resize_iframe_dummy_output', data=['{}']),
             dcc.Store(id='error_message_dummy_output', data=['{}']),
             dcc.Store(id='property_metadata', data={}),
+            dcc.Store(id='display_name_to_property_name', data={}),
 
             # When the query is running, or data is loading, show a loading icon in place of the submit button, so user doesn't spam queries by accident
             dcc.Loading(
@@ -533,9 +534,10 @@ def create_dash_app(dataframe = None, requests_pathname_prefix='/dash/', aggrega
         [Output('output_div', 'children')],
         [Input('pair_data', 'data')],
         [State('query_data', 'data'),
-        State('property_metadata', 'data'),]
+        State('property_metadata', 'data'),
+        State('display_name_to_property_name', 'data'),]
     )
-    def instantiate_output_elements(pair_data, query_data, property_metadata):
+    def instantiate_output_elements(pair_data, query_data, property_metadata, display_name_to_property_name):
 
         pair_data = json.loads(pair_data)
         if "observations" in pair_data:
@@ -595,7 +597,9 @@ def create_dash_app(dataframe = None, requests_pathname_prefix='/dash/', aggrega
                     rf_name, rf_min, rf_max = rf_name_min_max.split(',')
                     
                     # for getting data from DB
-                    compound, prop = rf_name.split('_', 1)
+                    compound, display_name_prop = rf_name.split('_', 1)
+                    # e.g. converting display_name_prop='CYP3A4_IC50_uM' to value in DB column property_name.name='CYP3A4'
+                    prop = display_name_to_property_name[display_name_prop]
                     if rf_min not in ['None', None]:
                         rf_args.append({'compound': compound, 'property_name': prop, 'operator': '>=', 'value': rf_min})
                     if rf_max not in ['None', None]:
@@ -1066,11 +1070,12 @@ def create_dash_app(dataframe = None, requests_pathname_prefix='/dash/', aggrega
         parent.snapfilter_id = "";
         parent.snapfilter_string = "";
 
-        return [output, parent.property_metadata];
+        return [output, parent.property_metadata, parent.display_name_to_property_name];
     }
     """,
     [Output('input_data', 'data'),
-    Output('property_metadata', 'data'),],
+    Output('property_metadata', 'data'),
+    Output('display_name_to_property_name', 'data'),],
     [Input('submit_button', 'n_clicks')],
     prevent_initial_call=False
     )
@@ -1400,9 +1405,10 @@ def create_dash_app(dataframe = None, requests_pathname_prefix='/dash/', aggrega
         [State('range_filter_names', 'data'),
         State('pair_data', 'data'),
         State('query_data', 'data'),
-        State('property_metadata', 'data')]
+        State('property_metadata', 'data'),
+        State('display_name_to_property_name', 'data'),]
     )
-    def aggregate_statistics_by_rule(x_name, y_name, min_rfs, max_rfs, rf_names, pair_data, query_data, property_metadata):
+    def aggregate_statistics_by_rule(x_name, y_name, min_rfs, max_rfs, rf_names, pair_data, query_data, property_metadata, display_name_to_property_name):
 
         pair_data = json.loads(pair_data)
         query_id = pair_data['query_id']
@@ -1422,7 +1428,10 @@ def create_dash_app(dataframe = None, requests_pathname_prefix='/dash/', aggrega
 
         rf_args = []
         for name, rf_min, rf_max in zip(rf_names, min_rfs, max_rfs):
-            compound, prop = name.split('_', 1)
+            assert name[0:2] in ('A_', 'B_')
+            compound, display_name_prop = name.split('_', 1)
+            # e.g. converting display_name_prop='CYP3A4_IC50_uM' to value in DB column property_name.name='CYP3A4'
+            prop = display_name_to_property_name[display_name_prop]
             if rf_min is not None:
                 rf_args.append({'compound': compound, 'property_name': prop, 'operator': '>=', 'value': rf_min})
             if rf_max is not None:
@@ -1728,13 +1737,14 @@ def create_dash_app(dataframe = None, requests_pathname_prefix='/dash/', aggrega
         State('query_data', 'data'),
         State('crossfilter-xaxis-column', 'value'),
         State('crossfilter-yaxis-column', 'value'),
-        State('property_metadata', 'data')],
+        State('property_metadata', 'data'),
+        State('display_name_to_property_name', 'data'),],
         prevent_initial_call = True
     )
     def update_graph(
         colors_mapped_to_ids, active_cell, derived_viewport_row_ids, selected_row_ids,
         xaxis_radio_type, yaxis_radio_type, rf_names, min_rfs, max_rfs, minmax, pair_data, start_highlight_first_row, finish_highlight_first_row,
-        columns, input_selected_cells, query_data, xaxis_column_name, yaxis_column_name, property_metadata
+        columns, input_selected_cells, query_data, xaxis_column_name, yaxis_column_name, property_metadata, display_name_to_property_name
     ):
 
         pair_data = json.loads(pair_data)
@@ -1818,7 +1828,9 @@ def create_dash_app(dataframe = None, requests_pathname_prefix='/dash/', aggrega
         else:
             rf_args = []
             for name, rf_min, rf_max in zip(rf_names, min_rfs, max_rfs):
-                compound, prop = name.split('_', 1)
+                compound, display_name_prop = name.split('_', 1)
+                # e.g. converting display_name_prop='CYP3A4_IC50_uM' to value in DB column property_name.name='CYP3A4'
+                prop = display_name_to_property_name[display_name_prop]
                 if rf_min is not None:
                     rf_args.append({'compound': compound, 'property_name': prop, 'operator': '>=', 'value': rf_min})
                 if rf_max is not None:

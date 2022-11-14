@@ -667,6 +667,7 @@ function bind_ketcher2() {
 }
 
 var property_metadata;
+var display_name_to_property_name = {};
 
 function get_prop_options() {
 
@@ -696,6 +697,8 @@ function get_prop_options() {
                 properties_dropdown.appendChild(checkbox);
                 properties_dropdown.appendChild(checkbox_label);
                 properties_dropdown.appendChild(document.createElement('br'));
+
+                display_name_to_property_name[value['display_name']] = key;
             }
         }
     })
