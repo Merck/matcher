@@ -494,7 +494,7 @@ def create_dash_app(dataframe = None, requests_pathname_prefix='/dash/', aggrega
 
     if flask_server is not None:
         # USING routes_pathname_prefix IS KEY FOR THE DASH INTERFACE TO LOAD FROM FLASK WITH THIS SETUP
-        app_dash = Dash(__name__, assets_folder="css/dash/" , routes_pathname_prefix=requests_pathname_prefix, prevent_initial_callbacks=True, server=flask_server, serve_locally=False)
+        app_dash = Dash(__name__, assets_folder="css/dash/" , routes_pathname_prefix=requests_pathname_prefix, prevent_initial_callbacks=True, server=flask_server, serve_locally=True)
     else:
         raise Exception("A Flask server must be provided as an argument")
 
