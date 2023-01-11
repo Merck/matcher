@@ -46,6 +46,9 @@ async def get_matcher_conn(schema='public', timeout=3600):
         timeout=timeout
     )
     if schema not in ["public", "None", ""]:
+        # Enforce lowercase schema names. This prevents headaches involving always needing to use quotes in subsequent SQL
+        schema = schema.lower()
+
         # asyncpg doesn't let us use parameters in SET statements, so we need another mechanism to prevent SQL injection
         # Therefore, here we validate the schema (which comes from an API query parameter),
         #  against schema in the DB
