@@ -50,9 +50,9 @@ Important: The example queries are only guaranteed to work with the example data
 
 Data is present in the backend/initialize_db directory.
 
-<strong>Quick Start data (default)</strong>: Data filenames begin with "quick". Contains 1078 ChEMBL compounds, the minimum to fully reproduce queries described in our publication (TODO: Add hyperlink here).
+<strong>Quick Start data (default)</strong>: Data filenames begin with "quick". Contains 1089 ChEMBL compounds, the minimum to fully reproduce queries described in our publication (TODO: Add hyperlink here).
 
-<strong>Rapidly test/debug the deployment</strong>: Data filenames begin with "test". Contains 14 ChEMBL compounds, a subset of the Quick Start 1078 compounds, for the purpose of rapid testing during development or troubleshooting. All example queries work, but return only a few results.
+<strong>Rapidly test/debug the deployment</strong>: Data filenames begin with "test". Contains 16 ChEMBL compounds, a subset of the Quick Start 1078 compounds, for the purpose of rapid testing during development or troubleshooting. All example queries work, but return only a few results.
 
 <strong>Full ChEMBL dataset</strong>: Data filenames begin with "ChEMBL_CYP3A4_hERG". Contains 20267 ChEMBL compounds having CYP3A4 inhibition and/or hERG inhibition data, which were included with the [mmpdb publication](https://pubs.acs.org/doi/10.1021/acs.jcim.8b00173). A superset of the Quick Start data.
 
