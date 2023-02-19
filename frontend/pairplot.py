@@ -1111,6 +1111,10 @@ def create_dash_app(dataframe = None, requests_pathname_prefix='/dash/', aggrega
     def run_persistent_query(input_data):
 
         input_data_dict = json.loads(input_data)
+        # To load a new example query snapshot to the database upon DB build, uncomment below line, create a shareable link after running a query, then load that link
+        # Then copy and paste the below dictionary that is printed out, into matcher/backend/initialize_db/example_queries.json,
+        #  taking care to match the format of the other JSON lines that are in example_queries.json (e.g. delete extra fields such as schema and query_id)
+        #logging.info(input_data_dict)
         if input_data_dict.get('query_id') != -1:
             # This means we loaded a snapshot that already has saved results in the DB
             # Therefore, instead of running that query again and duplicating those results, we just skip the query and reference those previous results
