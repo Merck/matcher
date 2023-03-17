@@ -1058,10 +1058,19 @@ def apply_transforms_to_input(variable, core, transform_data, aggregation_type, 
     assert aggregation_type in ('individual_transforms', 'group_by_fragment') and num_cuts > 0 and num_cuts < 4
     if num_cuts == 1:
         core = isotopes_to_mapped_wildcards(clear_atom_maps(core))
+
+        # The presence of a mapped wildcard in the middle of a SMILES string, for a single-cut fragment, sometimes
+        # causes smiles_syntax.convert_labeled_wildcards_to_closures to raise NotImplementedError("intermediate groups not supported" 
+        core = Chem.MolToSmiles(clear_atom_maps(core))
+        core_to_weld = smiles_syntax.convert_wildcards_to_closures(core)
+
     for row in transform_data:
         if num_cuts == 1:
             # Trivial because the core and to_smiles can only be glued together in one orientation
-            core_to_weld, variable_to_weld = apply_glue(Chem.MolToSmiles(core)), apply_glue(row['to_smiles'])
+
+            # Important to clear atom maps due to smiles_syntax, see above where we clear atom maps for core
+            variable_to_weld = Chem.MolToSmiles(clear_atom_maps(Chem.MolFromSmiles(row['to_smiles'])))
+            variable_to_weld = smiles_syntax.convert_wildcards_to_closures(variable_to_weld)
             welded = Chem.MolFromSmiles(f"{core_to_weld}.{variable_to_weld}")
             products = [welded]
         else:
