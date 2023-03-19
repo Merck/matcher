@@ -6,6 +6,7 @@ Matcher is built around the [mmpdb](https://github.com/rdkit/mmpdb) platform for
 
 # Table of Contents
 
+0. [System Requirements](#system_requirements)
 1. [Quick Start](#quick_start)
 2. [Run Example Query](#run_example_query)
 3. [Data Included](#data_included)
@@ -13,6 +14,11 @@ Matcher is built around the [mmpdb](https://github.com/rdkit/mmpdb) platform for
 5. [Metadata Information](#metadata_info)
 6. [OpenAPI for Backend](#backend_OpenAPI)
 7. [Using mmpdb Commands](#mmpdb_commands)
+
+# System Requirements <a id="system_requirements"></a>
+
+- Computer with x86 processor (i.e. most desktop/laptop computers except Apple M-series)
+    - ARM processors are not yet supported, due to certain dependencies
 
 # Quick Start <a id="quick_start"></a>
 
