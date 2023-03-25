@@ -1,3 +1,5 @@
+![matcher search example](https://github.com/Merck/matcher/blob/main/frontend/examples/1.png?raw=True)
+
 Matcher is a tool for understanding how chemical structure optimization problems have been solved.
 
 Matcher enables deep control over searching structure/activity relationships (SAR) derived from large datasets, and takes the form of an accessible web application with simple deployment.
