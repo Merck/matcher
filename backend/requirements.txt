@@ -5,6 +5,7 @@ pandas==1.4.1
 pillow==8.3.1
 python-multipart==0.0.5
 rdkit-pypi==2021.3.5
+typing-extensions==4.5.0
 uvicorn==0.17.4
 # For building the mmpdb database
 psycopg2-binary==2.9.1
