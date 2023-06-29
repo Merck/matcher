@@ -782,7 +782,7 @@ async def enumerate_designs(data: EnumerationData, schema: str = 'public'):
 
     aggregation_type = data.query.advanced_options.aggregation_type
     mapped_molfile = ss_select.attach_maps(molfile, variable_atoms, environment_atoms)
-    if ss_select.wildcards_in_molecule(mapped_molfile):
+    if ss_select.wildcards_in_core(mapped_molfile):
         return 'wildcards_in_core_error'
     variable, core = ss_select.extract_variable_and_enumeration_core(mapped_molfile)
     num_cuts = ss_select.get_num_cuts(variable)

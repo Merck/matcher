@@ -977,10 +977,10 @@ def get_num_cuts(mol):
             num_cuts += 1
     return num_cuts
 
-def wildcards_in_molecule(molfile):
+def wildcards_in_core(molfile):
     mol = Chem.MolFromMolBlock(molfile)
     for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() == 0:
+        if atom.GetAtomicNum() == 0 and atom.GetAtomMapNum() == 2:
             return True
     return False
 
