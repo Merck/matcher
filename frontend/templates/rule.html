@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+	<title>Matcher</title>
+	<link type="text/css" rel="stylesheet" href="/css/matcher.css" />
+	<script src="/js/promise-1.0.0.min.js"></script>
+	<!-- We need the below jinja2 template syntax in order for template variables, passed in by the frontend_api.py, to be understood by the js code -->
+    <script> {% include '/js/rule.js' %} </script>
+</head>
+<body onload="startup();">
+    <h1>Snap by rule</h1>
+    <input type="hidden" id="rule_snapquery_id" name="rule_snapquery_id" value={{snapquery_id}}>
+    <input type="hidden" id="rule_snapfilter_id" name="rule_snapfilter_id" value={{snapfilter_id}}>
+    <input type="hidden" id="rule_snapfilter_string" name="rule_snapfilter_string" value={{snapfilter_string}}>
+    <input type="hidden" id="rule_query_type" name="rule_query_type" value="{{query_type}}">
+    <input type="hidden" id="rule_transform_order" name="rule_transform_order" value="{{transform_order}}">
+    <input type="hidden" id="rule_aggregation_type" name="rule_aggregation_type" value="{{aggregation_type}}">
+    <input type="hidden" id="rule_query_id" name="rule_query_id" value={{query_id}}>
+    <input type="hidden" id="rule_REQUIRED_properties" name="rule_REQUIRED_properties" value={{REQUIRED_properties}}>
+    <input type="hidden" id="rule_OPTIONAL_properties" name="rule_OPTIONAL_properties" value={{OPTIONAL_properties}}>
+
+    <button id="jump_to_results_button" onclick="jump_to_results()" style="display:none;"></button>
+    <div style="width:100%;">
+        <iframe src="" id="outputSnapByRule" class="output-frame" frameborder="0" scrolling="auto" onload="resize_iframe(this);"></iframe>
+    </div>
+
+    <div style="clear: both;"></div>
+</body>
+</html>
