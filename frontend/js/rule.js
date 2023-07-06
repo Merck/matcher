@@ -2,6 +2,7 @@ var backend_root = "{{ external_backend_root }}";
 var frontend_root = "{{ external_frontend_root }}";
 var dash_path = frontend_root + '/dash/rule/';
 
+var schema = "{{ schema }}";
 
 async function postRequest(url = '', data = {}) {
 
