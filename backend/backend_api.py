@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from starlette.responses import StreamingResponse
 from typing import Callable, List
 from models import QueryInput, ValidateSelectionInput, AggregationParameters, PlotParameters, PairsCondensed, \
-    GetAllRawData, EnumerationData
+    GetAllRawData, EnumerationData, CreateSnapshotByRule
 
 # Modules for chemistry operations
 # Processes user-defined structure information in the Input UI
@@ -26,6 +26,7 @@ import logging
 import copy
 from collections import OrderedDict
 logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 username = os.getenv("POSTGRES_USER")
@@ -335,6 +336,74 @@ async def async_query_v3_backend(query: QueryInput, schema: str = 'public'):
     return json.dumps({'query_id': new_query_id})
 
 
+@app.post("/create_snapshot_by_rule")
+async def create_snapshot_by_rule(query: CreateSnapshotByRule, schema: str = 'public'):
+    query_result = """
+    INSERT INTO query_result (
+        query_id,
+        rule_id,
+        use_original_direction,
+        from_construct_id,
+        to_construct_id
+    )
+    SELECT
+    $1 query_id,
+    r.id AS rule_id,
+    True use_original_direction,
+    fc.id AS from_construct_id,
+    tc.id AS to_construct_id
+    FROM
+    rule_environment re
+    JOIN pair ON pair.rule_environment_id = re.id
+    JOIN "rule" r ON r.id = re.rule_id
+    JOIN from_construct fc ON fc.constant_id = pair.constant_id AND fc.rule_smiles_id = r.from_smiles_id
+    JOIN to_construct tc ON tc.constant_id = pair.constant_id AND tc.rule_smiles_id = r.to_smiles_id
+    WHERE re.id = $2
+    """
+    snapquery_insert = """
+    INSERT INTO snapquery (
+        version_id,
+        query_type,
+        query_id,
+        transform_order,
+        REQUIRED_properties,
+        OPTIONAL_properties,
+        variable_min_heavies,
+        variable_max_heavies,
+        compound_min_heavies,
+        compound_max_heavies,
+        aggregation_type
+    )
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+    RETURNING id
+    """
+    conn = await get_matcher_conn(schema=schema)
+    version = 1
+    try:
+        async with conn.transaction():
+            new_query_id = await conn.fetchval("INSERT INTO query (inserted_at) VALUES (clock_timestamp()) RETURNING id")
+            snapfilter_id = await conn.fetchval("INSERT INTO snapfilter (version_id, snapfilter_string) VALUES ($1, $2) RETURNING id", version, '')
+            snapquery_id = await conn.fetchval(
+                snapquery_insert,
+                version,
+                query.query_type,
+                new_query_id,
+                query.transform_order,
+                query.REQUIRED_properties,
+                query.OPTIONAL_properties,
+                query.advanced_options.variable_min_heavies,
+                query.advanced_options.variable_max_heavies,
+                query.advanced_options.compound_min_heavies,
+                query.advanced_options.compound_max_heavies,
+                query.advanced_options.aggregation_type
+            )
+            snapshot_id = await conn.fetchval("INSERT INTO snapshot (snapquery_id, snapfilter_id) VALUES ($1, $2) RETURNING id", snapquery_id, snapfilter_id)
+            await conn.execute(query_result, new_query_id, query.rule_environment_id)
+    finally:
+        await conn.close()
+    return {"snapshot_id": snapshot_id}
+
+
 @app.post("/start_query")
 async def start_query(query: QueryInput, background_tasks: BackgroundTasks, schema: str = 'public'):
     """
@@ -634,7 +703,6 @@ async def aggregate_transforms(filters: AggregationParameters, schema: str = 'pu
         'rows': rows,
         'grouped_by_environment': use_environment,
     }
-
     return output
 
 

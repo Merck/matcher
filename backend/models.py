@@ -100,6 +100,7 @@ class QueryInput(BaseModel):
             }
         }
 
+
 class ExampleQuery(QueryInput):
     # For use when we pre-load example query inputs to the database
     # No query has actually been run, therefore there is no query_id that has been assigned
@@ -128,6 +129,20 @@ class Statistic(BaseModel):
     change_type: Literal['delta', 'fold_change']
     base: Optional[Literal['raw', 'log']] = 'raw'
     units: Optional[Literal['uM', 'M']] = None
+
+
+class CreateSnapshotByRule(BaseModel):
+    rule_environment_id: int
+    query_type: Literal['exact', 'substructure'] = 'exact'
+    transform_order: Literal['first_order', 'second_order']
+    advanced_options: AdvancedOptions = AdvancedOptions(
+        variable_min_heavies=0,
+        variable_max_heavies=0,
+        compound_max_heavies=0,
+        aggregation_type='group_by_fragment'
+    )
+    REQUIRED_properties: Optional[str] = ''
+    OPTIONAL_properties: Optional[str] = ''
 
 
 class AggregationParameters(BaseModel):
