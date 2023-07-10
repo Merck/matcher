@@ -175,8 +175,6 @@ def run_persistent_query(input_data):
 
 
 def instantiate_output_elements(create_id, pair_data, query_data, property_metadata, display_name_to_property_name):
-    print('pair_data')
-    print(pair_data)
     pair_data = json.loads(pair_data)
     if "observations" in pair_data:
         # This means that something went wrong with the query, so we are returning an empty layout

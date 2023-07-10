@@ -1,8 +1,12 @@
 var backend_root = "{{ external_backend_root }}";
 var frontend_root = "{{ external_frontend_root }}";
 var dash_path = frontend_root + '/dash/rule/';
-
 var schema = "{{ schema }}";
+
+// Variables specific to the rep view
+var rule_environment_statistics_id = {{ rule_environment_statistics_id }};
+var rep_property = "{{ rep_property }}";
+var rep_query_id = {{ rep_query_id }};
 
 async function postRequest(url = '', data = {}) {
 
