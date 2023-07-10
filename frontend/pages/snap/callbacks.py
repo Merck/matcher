@@ -722,7 +722,8 @@ clientside_callback(
         # the parent table_transforms.data represents the table's unsorted data
         # By using derived_virtual_data, we are accessing the rows after they have been sorted
         State('table_transforms', 'derived_virtual_data')
-    ]
+    ],
+    prevent_initial_call=True
 )
 
 
@@ -732,7 +733,8 @@ clientside_callback(
     snapshot_states + [
         State('query_data', 'data'),
         State('pair_data', 'data')
-    ]
+    ],
+    prevent_initial_call=True
 )
 def enumerate_designs(*inputs):
     selected_row_data, query_data, pair_data = inputs[0], inputs[-2], inputs[-1]
