@@ -1,6 +1,6 @@
 var backend_root = "{{ external_backend_root }}";
 var frontend_root = "{{ external_frontend_root }}";
-var dash_path = frontend_root + '/dash/rule/';
+var dash_path = frontend_root + '/dash/rep/';
 var schema = "{{ schema }}";
 
 // Variables specific to the rep view
@@ -81,7 +81,7 @@ function startup() {
 }
 
 function initialize_content() {
-    document.getElementById("outputSnapByRule").setAttribute("src", dash_path);
+    document.getElementById("repOutput").setAttribute("src", dash_path);
 }
 
 function push_original_url () {
@@ -91,7 +91,7 @@ function push_original_url () {
 function jump_to_results () {
     // A delay is necessary here (when called from a Dash callback after the results are ready), otherwise the jump won't work
     setTimeout(function () {
-        location.href = "#outputSnapByRule";
+        location.href = "#repOutput";
         push_original_url();
     }, 2000);
 }

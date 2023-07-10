@@ -1,4 +1,4 @@
-DASH_PAGE_PREFIX = 'rule'
+DASH_PAGE_PREFIX = 'rep'
 
 
 def create_id(name: str) -> str:
