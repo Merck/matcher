@@ -29,6 +29,8 @@ def generate_layout():
                 dcc.Store(id=create_id('input_data'), data=['{}']),
                 dcc.Store(id=create_id('query_data'), data=['{}']),
                 dcc.Store(id=create_id('pair_data'), data=['{}']),
+                dcc.Store(id='rule_environment_statistics_id', data=0),
+                dcc.Store(id='rep_property', data=''),
 
                 html.Div(
                     [

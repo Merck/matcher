@@ -1,11 +1,17 @@
 import logging
+import time
+import json
+import requests
 from functools import partial
 
 from dash import callback, clientside_callback
 from dash.dependencies import Input, Output, State, ALL
 
+from config import backend_root
 from pages.rule.constants import create_id
-from pages.common.callbacks import (run_persistent_query, instantiate_output_elements, aggregate_statistics_by_rule, selected_point_to_pair_tables, update_graph)
+from pages.common.callbacks import (
+    #run_persistent_query, 
+    instantiate_output_elements, aggregate_statistics_by_rule, selected_point_to_pair_tables, update_graph)
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -17,22 +23,23 @@ clientside_callback(
         // This callback will always fire on page load, in order to support automatic query firing of snapshot-based queries
         // However, if we loaded the page without any snapshot-based query, then the fields will be empty; in that case, don't confuse the user with an error message
         // This block disables itself after the initial page load, so subsequently the user will get error messages if they try to submit an incomplete form
-        data = {
-            snapquery_id: parent.document.getElementById('rule_snapquery_id').value,
-            query_type: parent.document.getElementById('rule_query_type').value,
-            query_id: parent.document.getElementById('rule_query_id').value,
-            transform_order: parent.document.getElementById('rule_transform_order').value,
-            REQUIRED_properties: parent.document.getElementById('rule_REQUIRED_properties').value,
-            OPTIONAL_properties: parent.document.getElementById('rule_OPTIONAL_properties').value,
-            advanced_options: {
-                'aggregation_type': parent.document.getElementById('rule_aggregation_type').value,
-            },
-            snapfilter_id: parent.document.getElementById('rule_snapfilter_id').value,
-            snapfilter_string: parent.document.getElementById('rule_snapfilter_string').value,
-            schema: parent.schema
+        input_data = {
+            schema: parent.schema,
+            rule_environment_statistics_id: parseInt(parent.document.getElementById('rule_environment_statistics_id').value, 10),
+            rep_query_id: parseInt(parent.document.getElementById('rep_query_id').value, 10),
+            OPTIONAL_properties: parent.document.getElementById('rep_property').value,
+            // rep_property: parent.document.getElementById('rep_property').value,
+
+            // Fixed values for rule/environment/property (rep) view
+
+            REQUIRED_properties: "",
+            advanced_options: {'aggregation_type': "individual_transforms"},
+            snapfilter_string: ""
         }
-        output = JSON.stringify(data);
-        return [output, parent.property_metadata, parent.display_name_to_property_name];
+        console.log('input_data');
+        console.log(input_data);
+        input_data = JSON.stringify(input_data);
+        return [input_data, parent.property_metadata, parent.display_name_to_property_name];
     }
     """,
     [
@@ -44,14 +51,75 @@ clientside_callback(
     prevent_initial_call=False
 )
 
+# Initiate a query and poll the DB for results over intervals
+def run_persistent_query(input_data):
+    input_data = json.loads(input_data)
+    print('input_data')
+    print(input_data)
 
-# Use this function to run the query, if your production environment kills long requests in a way that you cannot prevent
-# TODO instead, use Celery or similar service
+    if input_data['rep_query_id'] != -1:
+        # This means there are already stored results in the DB
+        # Therefore, instead of running that query again and duplicating those results, we just skip the query and reference those previous results
+        return [json.dumps(input_data), json.dumps({'query_id': input_data['rep_query_id']})]
+
+    # Start the query and get an ID which we will use to poll the DB for existence of results over intervals
+    schema = input_data['schema']
+    started_query = requests.post(backend_root + f'/start_rep_query?schema={schema}', json={'rule_environment_statistics_id': input_data['rule_environment_statistics_id']})
+    started_query = json.loads(started_query.json())
+
+    # If there were problems with input from UI, terminate here
+    #if 'observations' in started_query:
+        #return [input_data, started_query]
+
+    query_id = started_query['query_id']
+
+    # Set the time cutoff, in seconds, where we should give up on waiting for the query to finish
+    timeout = 120
+    elapsed = 0
+    start_time = time.perf_counter()
+    # Set the time, in seconds, for how frequently we poll the DB for existence of results that indicate query completion
+    # We start with 2 seconds between each check, then increase interval as query becomes longer
+    intervals = [
+        {'interval_time': 2, 'start_next_interval_at': 14},
+        # Purposefully use a time longer than the timeout so that this last interval is used until the end
+        {'interval_time': 5, 'start_next_interval_at': timeout * 2},
+    ]
+    current_interval = 0
+
+    while elapsed < timeout:
+
+        time.sleep(intervals[current_interval]['interval_time'])
+        query_status = requests.get(backend_root + f'/check_query/{query_id}?schema={schema}')
+        query_status = json.loads(query_status.json())
+        print('query_status')
+        print(query_status)
+
+        if query_status['finished'] == "True":
+            #  The only case leading to display of result data, if we started a query
+            # Connect output data (via query_id, which is used in the DB to represent the unique query to which a results set belongs) to the input state,
+            # for use in snapshot generation
+            input_data['query_id'] = query_id
+            break
+
+        elapsed = time.perf_counter() - start_time
+        if elapsed > intervals[current_interval]['start_next_interval_at']:
+            current_interval += 1
+
+    return [json.dumps(input_data), json.dumps(started_query)]
+
 rule_run_persistent_query = callback(
     [
         Output(create_id('query_data'), 'data'),
         Output(create_id('pair_data'), 'data')
     ],
+    ### if input_data_dict.get('query_id') != -1:
+    ### schema = input_data_dict['schema']
+    ### input_data_dict['query_id'] = query_id
+    ### if input_data_dict['snapquery_id'] != '':
+    ### response = requests.get(backend_root + f"/bind_snapquery_to_results/{input_data_dict['snapquery_id']}?query_id={query_id}&schema={schema}")
+
+    ### pair_data
+    ### started_query['observations']['query_timeout'] = "True"
     [Input(create_id('input_data'), 'data')]
 )(run_persistent_query)
 
@@ -60,8 +128,14 @@ rule_run_persistent_query = callback(
 # Once we have the data, we can use the data to initialize all of the output elements
 rule_instantiate_output_elements = callback(
     [Output(create_id('output_div'), 'children')],
+    ### pair_data: query_id
+    ### if "observations" in pair_data:
     [Input(create_id('pair_data'), 'data')],
     [
+        ### query_data: schema
+        ### query_data: aggregation_type = snapquery_dict['advanced_options']['aggregation_type']
+        ### if snapquery_dict['snapfilter_string'] != '':
+        ### all_props = set(snapquery_dict["REQUIRED_properties"].split(",") + snapquery_dict["OPTIONAL_properties"].split(","))
         State(create_id('query_data'), 'data'),
         State(create_id('property_metadata'), 'data'),
         State(create_id('display_name_to_property_name'), 'data'),
@@ -88,7 +162,11 @@ rule_aggregate_statistics_by_rule = callback(
     ],
     [
         State(create_id('range_filter_names'), 'data'),
+        ### pair_data: query_id
         State(create_id('pair_data'), 'data'),
+        ### query_data: schema
+        ### query_data: all_props = snapquery_dict["REQUIRED_properties"].split(",") + snapquery_dict["OPTIONAL_properties"].split(",")
+        ### query_data: aggregation_type = snapquery_dict['advanced_options']['aggregation_type']
         State(create_id('query_data'), 'data'),
         State(create_id('property_metadata'), 'data'),
         State(create_id('display_name_to_property_name'), 'data'),
@@ -110,9 +188,12 @@ rule_selected_point_to_pair_tables = callback(
         Input(create_id('clearButton'), 'n_clicks')
     ],
     [
+        # pair_data: query_id
         State(create_id('pair_data'), 'data'),
         State(create_id('crossfilter-xaxis-column'), 'value'),
         State(create_id('crossfilter-yaxis-column'), 'value'),
+        # query_data: schema, 
+        # query_data: all_props = snapquery_dict["REQUIRED_properties"].split(",") + snapquery_dict["OPTIONAL_properties"].split(",")
         State(create_id('query_data'), 'data'),
         State(create_id('property_metadata'), 'data')
     ]
@@ -145,11 +226,14 @@ rule_update_graph = callback(
         Input(create_id('minmax'), 'data')
     ],
     [
+        ### pair_data: query_id
         State(create_id('pair_data'), 'data'),
         State(create_id('start_highlight_first_row'), 'n_clicks'),
         State(create_id('finish_highlight_first_row'), 'n_clicks'),
         State(create_id('table_transforms'), 'columns'),
         State(create_id('table_transforms'), 'selected_cells'),
+        ### query_data: schema
+        ### query_data: aggregation_type = snapquery_dict['advanced_options']['aggregation_type']
         State(create_id('query_data'), 'data'),
         State(create_id('crossfilter-xaxis-column'), 'value'),
         State(create_id('crossfilter-yaxis-column'), 'value'),
