@@ -555,7 +555,14 @@ WHERE rule_environment_statistics.id = $4
         async with conn.transaction():
             frag = await conn.fetchval(get_num_frags_statement, query.rule_environment_statistics_id)
             num_frags = frag.count('*')
+            assert num_frags > 0
             await conn.execute(insert_statement, new_query_id, num_frags, num_frags, query.rule_environment_statistics_id)
+            # Associate the cached query results with the rule_environment_statistics.id
+            # Then, repeating the page load will bypass all of the above queries and go directly to results
+            await conn.execute(
+                "UPDATE rule_environment_statistics SET query_id = $1 WHERE id = $2",
+                new_query_id, query.rule_environment_statistics_id
+            )
     finally:
         await conn.close()
     return
