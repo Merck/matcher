@@ -8,7 +8,7 @@ from dash import callback, clientside_callback
 from dash.dependencies import Input, Output, State, ALL
 
 from config import backend_root
-from pages.rule.constants import create_id
+from pages.rep.constants import create_id
 from pages.common.callbacks import (instantiate_output_elements, aggregate_statistics_by_rule, selected_point_to_pair_tables, update_graph)
 
 logging.basicConfig(level=logging.INFO)
@@ -92,7 +92,7 @@ def run_persistent_query(input_data):
 
     return [json.dumps(input_data), json.dumps(started_query)]
 
-rule_run_persistent_query = callback(
+rep_run_persistent_query = callback(
     [
         Output(create_id('query_data'), 'data'),
         Output(create_id('pair_data'), 'data')
@@ -103,7 +103,7 @@ rule_run_persistent_query = callback(
 
 # pair_data flows in from submit button (via DB query)
 # Once we have the data, we can use the data to initialize all of the output elements
-rule_instantiate_output_elements = callback(
+rep_instantiate_output_elements = callback(
     [Output(create_id('output_div'), 'children')],
     [Input(create_id('pair_data'), 'data')],
     [
@@ -116,7 +116,7 @@ rule_instantiate_output_elements = callback(
 
 # Update aggregated data when user selects different properties or range filters
 # We output agg_data, which is the parent data after aggregation, but which can undergo subsequent filtration by other clientside callbacks, before being loaded to the table
-rule_aggregate_statistics_by_rule = callback(
+rep_aggregate_statistics_by_rule = callback(
     [
         Output(create_id('agg_data'), 'data'),
         Output(create_id('table_transforms'), 'columns'),
@@ -142,7 +142,7 @@ rule_aggregate_statistics_by_rule = callback(
 
 
 # When user clicks on a point in pair plot, push that pair to the top of the pair_tables
-rule_selected_point_to_pair_tables = callback(
+rep_selected_point_to_pair_tables = callback(
     [
         Output(create_id('pair_tables'), 'children'),
         Output(create_id('clearButton'), 'n_clicks'),
@@ -164,7 +164,7 @@ rule_selected_point_to_pair_tables = callback(
 )(selected_point_to_pair_tables)
 
 
-rule_update_graph = callback(
+rep_update_graph = callback(
     [
         Output(create_id('table_transforms'), 'active_cell'),
         Output(create_id('finish_highlight_first_row'), 'n_clicks'),

@@ -3,7 +3,7 @@ from dash import Dash
 from frontend_api import app as Flask_app
 
 # imports callbacks required to register callbacks with the app
-import pages.rule.callbacks as rule_callbacks  # noqa
+import pages.rep.callbacks as rep_callbacks  # noqa
 import pages.snap.callbacks as snap_callbacks  # noqa
 
 

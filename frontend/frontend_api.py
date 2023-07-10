@@ -45,4 +45,4 @@ def rep(rule_environment_id):
     rep_data['rep_property'] = rep_property
     rep_data['rule_environment_id'] = rule_environment_id
     rep_data = {**rep_data, **data}
-    return render_template("templates/rule.html", **rep_data)
+    return render_template("templates/rep.html", **rep_data)
