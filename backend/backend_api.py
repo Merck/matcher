@@ -344,7 +344,6 @@ async def rep_read(rule_environment_id: int, prop: str, schema: str = 'public'):
     """
 
     try:
-        print('RUNNING rep_read')
         conn = await get_matcher_conn(schema=schema)
 
         statement = """
@@ -369,143 +368,6 @@ WHERE
         rep_data['rep_query_id'] = -1
 
     return rep_data
-
-
-@app.post("/rule_env_prop_query")
-#async def rule_env_prop_query(query: RuleEnvPropQuery, schema: str = 'public'):
-async def rule_env_prop_query(query: CreateSnapshotByRule, schema: str = 'public'):
-    query_result = """
-    INSERT INTO query_result (
-        query_id,
-        rule_id,
-        use_original_direction,
-        from_construct_id,
-        to_construct_id
-    )
-    SELECT
-    $1 query_id,
-    r.id AS rule_id,
-    True use_original_direction,
-    fc.id AS from_construct_id,
-    tc.id AS to_construct_id
-    FROM
-    rule_environment re
-    JOIN pair ON pair.rule_environment_id = re.id
-    JOIN "rule" r ON r.id = re.rule_id
-    JOIN from_construct fc ON fc.constant_id = pair.constant_id AND fc.rule_smiles_id = r.from_smiles_id
-    JOIN to_construct tc ON tc.constant_id = pair.constant_id AND tc.rule_smiles_id = r.to_smiles_id
-    WHERE re.id = $2
-    """
-    snapquery_insert = """
-    INSERT INTO snapquery (
-        version_id,
-        query_type,
-        query_id,
-        transform_order,
-        REQUIRED_properties,
-        OPTIONAL_properties,
-        variable_min_heavies,
-        variable_max_heavies,
-        compound_min_heavies,
-        compound_max_heavies,
-        aggregation_type
-    )
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-    RETURNING id
-    """
-    conn = await get_matcher_conn(schema=schema)
-    version = 1
-    try:
-        async with conn.transaction():
-            new_query_id = await conn.fetchval("INSERT INTO query (inserted_at) VALUES (clock_timestamp()) RETURNING id")
-            snapfilter_id = await conn.fetchval("INSERT INTO snapfilter (version_id, snapfilter_string) VALUES ($1, $2) RETURNING id", version, '')
-            snapquery_id = await conn.fetchval(
-                snapquery_insert,
-                version,
-                query.query_type,
-                new_query_id,
-                query.transform_order,
-                query.REQUIRED_properties,
-                query.OPTIONAL_properties,
-                query.advanced_options.variable_min_heavies,
-                query.advanced_options.variable_max_heavies,
-                query.advanced_options.compound_min_heavies,
-                query.advanced_options.compound_max_heavies,
-                query.advanced_options.aggregation_type
-            )
-            snapshot_id = await conn.fetchval("INSERT INTO snapshot (snapquery_id, snapfilter_id) VALUES ($1, $2) RETURNING id", snapquery_id, snapfilter_id)
-            await conn.execute(query_result, new_query_id, query.rule_environment_id)
-    finally:
-        await conn.close()
-    return {"snapshot_id": snapshot_id}
-
-
-@app.post("/create_snapshot_by_rule")
-async def create_snapshot_by_rule(query: CreateSnapshotByRule, schema: str = 'public'):
-    query_result = """
-    INSERT INTO query_result (
-        query_id,
-        rule_id,
-        use_original_direction,
-        from_construct_id,
-        to_construct_id
-    )
-    SELECT
-    $1 query_id,
-    r.id AS rule_id,
-    True use_original_direction,
-    fc.id AS from_construct_id,
-    tc.id AS to_construct_id
-    FROM
-    rule_environment re
-    JOIN pair ON pair.rule_environment_id = re.id
-    JOIN "rule" r ON r.id = re.rule_id
-    JOIN from_construct fc ON fc.constant_id = pair.constant_id AND fc.rule_smiles_id = r.from_smiles_id
-    JOIN to_construct tc ON tc.constant_id = pair.constant_id AND tc.rule_smiles_id = r.to_smiles_id
-    WHERE re.id = $2
-    """
-    snapquery_insert = """
-    INSERT INTO snapquery (
-        version_id,
-        query_type,
-        query_id,
-        transform_order,
-        REQUIRED_properties,
-        OPTIONAL_properties,
-        variable_min_heavies,
-        variable_max_heavies,
-        compound_min_heavies,
-        compound_max_heavies,
-        aggregation_type
-    )
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-    RETURNING id
-    """
-    conn = await get_matcher_conn(schema=schema)
-    version = 1
-    try:
-        async with conn.transaction():
-            new_query_id = await conn.fetchval("INSERT INTO query (inserted_at) VALUES (clock_timestamp()) RETURNING id")
-            snapfilter_id = await conn.fetchval("INSERT INTO snapfilter (version_id, snapfilter_string) VALUES ($1, $2) RETURNING id", version, '')
-            snapquery_id = await conn.fetchval(
-                snapquery_insert,
-                version,
-                query.query_type,
-                new_query_id,
-                query.transform_order,
-                query.REQUIRED_properties,
-                query.OPTIONAL_properties,
-                query.advanced_options.variable_min_heavies,
-                query.advanced_options.variable_max_heavies,
-                query.advanced_options.compound_min_heavies,
-                query.advanced_options.compound_max_heavies,
-                query.advanced_options.aggregation_type
-            )
-            snapshot_id = await conn.fetchval("INSERT INTO snapshot (snapquery_id, snapfilter_id) VALUES ($1, $2) RETURNING id", snapquery_id, snapfilter_id)
-            await conn.execute(query_result, new_query_id, query.rule_environment_id)
-    finally:
-        await conn.close()
-    return {"snapshot_id": snapshot_id}
 
 
 @app.post("/start_query")
@@ -652,12 +514,6 @@ async def start_rep_query(query: repQueryInput, background_tasks: BackgroundTask
 
 
 async def run_rep_query(query, schema, new_query_id):
-    print('query.rule_environment_statistics_id')
-    print(query.rule_environment_statistics_id)
-
-    print('new_query_id')
-    print(new_query_id)
-
     # Get number of fragmentations, which enables use of optimal index on from_construct and to_construct tables
     get_num_frags_statement = """
 SELECT rule_smiles.smiles
@@ -697,13 +553,9 @@ WHERE rule_environment_statistics.id = $4
     conn = await get_matcher_conn(schema=schema)
     try:
         async with conn.transaction():
-            print('starting query')
             frag = await conn.fetchval(get_num_frags_statement, query.rule_environment_statistics_id)
             num_frags = frag.count('*')
             await conn.execute(insert_statement, new_query_id, num_frags, num_frags, query.rule_environment_statistics_id)
-            #rows = await conn.fetch(statement, new_query_id, query.rule_environment_statistics_id)
-            #print(rows[0])
-            print('query_finished')
     finally:
         await conn.close()
     return

@@ -43,7 +43,6 @@ def rep(rule_environment_id):
     rep_data = requests.get(backend_root + f"/rep_read/{rule_environment_id}?prop={rep_property}").json()
     rep_data['schema'] = schema
     rep_data['rep_property'] = rep_property
+    rep_data['rule_environment_id'] = rule_environment_id
     rep_data = {**rep_data, **data}
-    print('rep_data')
-    print(rep_data)
     return render_template("templates/rule.html", **rep_data)
