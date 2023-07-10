@@ -6,7 +6,7 @@ from fastapi.routing import APIRoute
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.responses import StreamingResponse
 from typing import Callable, List
-from models import QueryInput, ValidateSelectionInput, AggregationParameters, PlotParameters, PairsCondensed, \
+from models import QueryInput, repQueryInput, ValidateSelectionInput, AggregationParameters, PlotParameters, PairsCondensed, \
     GetAllRawData, EnumerationData, CreateSnapshotByRule
 
 # Modules for chemistry operations
@@ -336,6 +336,110 @@ async def async_query_v3_backend(query: QueryInput, schema: str = 'public'):
     return json.dumps({'query_id': new_query_id})
 
 
+@app.get("/rep_read/{rule_environment_id}", response_class=ORJSONResponse)
+async def rep_read(rule_environment_id: int, prop: str, schema: str = 'public'):
+    """
+    Prepare to load all data connected to a specific rule, environment, property (rep) triplet
+    This is equivalent to loading all data for a rule_environment_statistics.id, which we will obtain below
+    """
+
+    try:
+        print('RUNNING rep_read')
+        conn = await get_matcher_conn(schema=schema)
+
+        statement = """
+SELECT 
+    rule_environment_statistics.id, rule_environment_statistics.query_id
+FROM
+    rule_environment_statistics
+    INNER JOIN property_name ON property_name.id = rule_environment_statistics.property_name_id
+    INNER JOIN rule_environment ON rule_environment.id = rule_environment_statistics.rule_environment_id
+WHERE
+    rule_environment.id = $1
+    AND property_name.name = $2
+"""
+        rep_data = await conn.fetch(statement, rule_environment_id, prop)
+        assert len(rep_data) == 1
+    finally:
+        await conn.close()
+
+    rep_data = list(rep_data[0])
+    rep_data = dict(zip(('rule_environment_statistics_id', 'rep_query_id'), rep_data))
+    if rep_data['rep_query_id'] is None:
+        rep_data['rep_query_id'] = -1
+
+    return rep_data
+
+
+@app.post("/rule_env_prop_query")
+#async def rule_env_prop_query(query: RuleEnvPropQuery, schema: str = 'public'):
+async def rule_env_prop_query(query: CreateSnapshotByRule, schema: str = 'public'):
+    query_result = """
+    INSERT INTO query_result (
+        query_id,
+        rule_id,
+        use_original_direction,
+        from_construct_id,
+        to_construct_id
+    )
+    SELECT
+    $1 query_id,
+    r.id AS rule_id,
+    True use_original_direction,
+    fc.id AS from_construct_id,
+    tc.id AS to_construct_id
+    FROM
+    rule_environment re
+    JOIN pair ON pair.rule_environment_id = re.id
+    JOIN "rule" r ON r.id = re.rule_id
+    JOIN from_construct fc ON fc.constant_id = pair.constant_id AND fc.rule_smiles_id = r.from_smiles_id
+    JOIN to_construct tc ON tc.constant_id = pair.constant_id AND tc.rule_smiles_id = r.to_smiles_id
+    WHERE re.id = $2
+    """
+    snapquery_insert = """
+    INSERT INTO snapquery (
+        version_id,
+        query_type,
+        query_id,
+        transform_order,
+        REQUIRED_properties,
+        OPTIONAL_properties,
+        variable_min_heavies,
+        variable_max_heavies,
+        compound_min_heavies,
+        compound_max_heavies,
+        aggregation_type
+    )
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+    RETURNING id
+    """
+    conn = await get_matcher_conn(schema=schema)
+    version = 1
+    try:
+        async with conn.transaction():
+            new_query_id = await conn.fetchval("INSERT INTO query (inserted_at) VALUES (clock_timestamp()) RETURNING id")
+            snapfilter_id = await conn.fetchval("INSERT INTO snapfilter (version_id, snapfilter_string) VALUES ($1, $2) RETURNING id", version, '')
+            snapquery_id = await conn.fetchval(
+                snapquery_insert,
+                version,
+                query.query_type,
+                new_query_id,
+                query.transform_order,
+                query.REQUIRED_properties,
+                query.OPTIONAL_properties,
+                query.advanced_options.variable_min_heavies,
+                query.advanced_options.variable_max_heavies,
+                query.advanced_options.compound_min_heavies,
+                query.advanced_options.compound_max_heavies,
+                query.advanced_options.aggregation_type
+            )
+            snapshot_id = await conn.fetchval("INSERT INTO snapshot (snapquery_id, snapfilter_id) VALUES ($1, $2) RETURNING id", snapquery_id, snapfilter_id)
+            await conn.execute(query_result, new_query_id, query.rule_environment_id)
+    finally:
+        await conn.close()
+    return {"snapshot_id": snapshot_id}
+
+
 @app.post("/create_snapshot_by_rule")
 async def create_snapshot_by_rule(query: CreateSnapshotByRule, schema: str = 'public'):
     query_result = """
@@ -521,6 +625,86 @@ async def run_query(parsed_query, schema):
             async with conn.transaction():
                 await conn.execute(f"INSERT INTO query_result (query_id, rule_id, use_original_direction, from_construct_id, to_construct_id) VALUES ({new_query_id}, 0, FALSE, 1, 1)")
 
+        await conn.close()
+    return
+
+
+@app.post("/start_rep_query")
+async def start_rep_query(query: repQueryInput, background_tasks: BackgroundTasks, schema: str = 'public'):
+    """
+    Input rule/environment/property (rep) triplet data, and receive a query_id that will be used for getting results. The query is then initiated asynchronously.
+
+    Then, proceed to /check_query to find out when the query is done.
+
+    Currently triggered by frontend /rep endpoint, for example, frontend/rep/123?prop=CYP3A4, where rule_environment_id = 123 and property_name = CYP3A4
+
+    Returns **query_id**, a positive integer
+    """
+    conn = await get_matcher_conn(schema=schema)
+    try:
+        async with conn.transaction():
+            new_query_id = await conn.fetchval("INSERT INTO query (inserted_at) VALUES (clock_timestamp()) RETURNING id")
+    finally:
+        await conn.close()
+
+    background_tasks.add_task(run_rep_query, query, schema, new_query_id)
+    return json.dumps({'query_id': new_query_id})
+
+
+async def run_rep_query(query, schema, new_query_id):
+    print('query.rule_environment_statistics_id')
+    print(query.rule_environment_statistics_id)
+
+    print('new_query_id')
+    print(new_query_id)
+
+    # Get number of fragmentations, which enables use of optimal index on from_construct and to_construct tables
+    get_num_frags_statement = """
+SELECT rule_smiles.smiles
+FROM rule_environment_statistics
+INNER JOIN rule_environment ON rule_environment.id = rule_environment_statistics.rule_environment_id
+INNER JOIN pair ON pair.rule_environment_id = rule_environment.id
+INNER JOIN rule ON rule.id = rule_environment.rule_id
+INNER JOIN rule_smiles ON rule.from_smiles_id = rule_smiles.id
+WHERE rule_environment_statistics.id = $1
+LIMIT 1
+"""
+
+    # I don't know why, but for $1, we need to explicitly declare the type as an integer in the SELECT statement
+    # Otherwise, asyncpg complains that new_query_id needs to be passed in as a string
+    insert_statement = """
+INSERT INTO query_result (query_id, rule_id, use_original_direction, from_construct_id, to_construct_id)
+SELECT $1::integer AS query_id, rule.id AS rule_id, TRUE AS use_original_direction, from_construct.id AS from_construct_id, to_construct.id AS to_construct_id
+
+FROM rule_environment_statistics
+INNER JOIN rule_environment ON rule_environment.id = rule_environment_statistics.rule_environment_id
+INNER JOIN pair ON pair.rule_environment_id = rule_environment.id
+INNER JOIN rule ON rule.id = rule_environment.rule_id
+INNER JOIN from_construct ON from_construct.num_frags = $2 AND from_construct.constant_id = pair.constant_id AND from_construct.rule_smiles_id = rule.from_smiles_id
+INNER JOIN to_construct ON to_construct.num_frags = $3 AND to_construct.constant_id = pair.constant_id AND to_construct.rule_smiles_id = rule.to_smiles_id
+
+-- only include pairs for specified property from rule_environment_statistics
+
+INNER JOIN compound from_compound ON from_compound.id = pair.compound1_id
+INNER JOIN compound to_compound ON to_compound.id = pair.compound2_id
+INNER JOIN compound_property from_compound_property ON from_compound_property.compound_id = from_compound.id
+    AND from_compound_property.property_name_id = rule_environment_statistics.property_name_id
+INNER JOIN compound_property to_compound_property ON to_compound_property.compound_id = to_compound.id
+    AND to_compound_property.property_name_id = rule_environment_statistics.property_name_id
+
+WHERE rule_environment_statistics.id = $4
+"""
+    conn = await get_matcher_conn(schema=schema)
+    try:
+        async with conn.transaction():
+            print('starting query')
+            frag = await conn.fetchval(get_num_frags_statement, query.rule_environment_statistics_id)
+            num_frags = frag.count('*')
+            await conn.execute(insert_statement, new_query_id, num_frags, num_frags, query.rule_environment_statistics_id)
+            #rows = await conn.fetch(statement, new_query_id, query.rule_environment_statistics_id)
+            #print(rows[0])
+            print('query_finished')
+    finally:
         await conn.close()
     return
 

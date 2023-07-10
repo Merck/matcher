@@ -34,12 +34,16 @@ def snapshot_query(snapshot_id):
     return render_template("templates/matcher.html", **snapshot_data)
 
 
-@app.route("/rule/<snapshot_id>")
-def rule_environment(snapshot_id):
+@app.route("/rep/<rule_environment_id>")
+def rep(rule_environment_id):
+    # Load all data connected to a specific rule, environment, property (rep) triplet
     schema = request.args.get('schema')
     query_schema = f"?schema={schema}" if schema is not None else ""
-    snapshot_data = requests.get(backend_root + f"/snap_read/{snapshot_id}{query_schema}")
-    snapshot_data = snapshot_data.json()
-    snapshot_data = {**snapshot_data, **data}
-    snapshot_data['schema'] = schema
-    return render_template("templates/rule.html", **snapshot_data)
+    rep_property = request.args.get('prop')
+    rep_data = requests.get(backend_root + f"/rep_read/{rule_environment_id}?prop={rep_property}").json()
+    rep_data['schema'] = schema
+    rep_data['rep_property'] = rep_property
+    rep_data = {**rep_data, **data}
+    print('rep_data')
+    print(rep_data)
+    return render_template("templates/rule.html", **rep_data)

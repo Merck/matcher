@@ -101,6 +101,10 @@ class QueryInput(BaseModel):
         }
 
 
+class repQueryInput(BaseModel):
+    rule_environment_statistics_id: int
+    #rep_property: str = Field(..., min_length=1)
+
 class ExampleQuery(QueryInput):
     # For use when we pre-load example query inputs to the database
     # No query has actually been run, therefore there is no query_id that has been assigned
