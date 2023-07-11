@@ -1,6 +1,6 @@
 var backend_root = "{{ external_backend_root }}";
 var frontend_root = "{{ external_frontend_root }}";
-var dash_path = frontend_root + '/dash/';
+var dash_path = frontend_root + '/dash/snap/';
 
 // When the page initially loads, the Dash app submit button will be automatically fired, which is necessary for automatic query submission when a snapshot is loaded in via template
 // However, we want to use this same html file even without loading a snapshot in via template, in which case the Dash submit button firing would trigger error messages, without the below global variable

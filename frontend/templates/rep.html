@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+	<title>Matcher</title>
+	<link type="text/css" rel="stylesheet" href="/css/matcher.css" />
+	<script src="/js/promise-1.0.0.min.js"></script>
+	<!-- We need the below jinja2 template syntax in order for template variables, passed in by the frontend_api.py, to be understood by the js code -->
+    <script> {% include '/js/rep.js' %} </script>
+</head>
+<body onload="startup();">
+    <h1>All pairs belonging to:<br>Transform + Environment ID: {{ rule_environment_id }}<br>Property: {{ rep_property }}</h1>
+
+    <button id="jump_to_results_button" onclick="jump_to_results()" style="display:none;"></button>
+    <div style="width:100%;">
+        <iframe src="" id="repOutput" class="output-frame" frameborder="0" scrolling="auto" onload="resize_iframe(this);"></iframe>
+    </div>
+
+    <div style="clear: both;"></div>
+</body>
+</html>

@@ -1,0 +1,17 @@
+[flake8]
+ignore =
+    Q
+    D
+    C812
+    # allow f-string
+    WPS305
+exclude =
+    .git,
+    __pycache__,
+    build,
+    .venv
+    libs
+max-complexity = 10
+max-line-length = 180
+max-imports = 17
+max-module-members = 10

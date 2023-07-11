@@ -6,11 +6,13 @@ COPY environment.yml requirements.txt ./
 
 RUN conda env create -f /opt/environment.yml
 
-COPY frontend_api.py matcher.html monkey.py pairplot.py ./
+COPY frontend_api.py monkey.py config.py dash_app.py ./
 COPY examples/ ./examples/
 COPY css/ ./css/
 COPY js/* ./js/
 COPY ketcher/ ./ketcher/
+COPY pages/ ./pages/
+COPY templates/ ./templates/
 
 EXPOSE 8000
 
