@@ -265,7 +265,8 @@ def get_new_snapshot_id(inputs):
 @callback(
     [Output('copy_link_clipboard', 'content')],
     [Input('copy_link_clipboard', 'n_clicks')],
-    snapshot_states
+    snapshot_states,
+    prevent_initial_call=True
 )
 def spawn_and_copy_snapshot_link(*inputs):
 
