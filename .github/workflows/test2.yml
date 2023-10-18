@@ -1,0 +1,22 @@
+name: docker-compose-test
+run-name: ${{ github.actor }} is running a test
+on: [push]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: compose build
+      run: docker compose build
+    - name: compose up
+      run: docker compose up -d
+    - name: sleep
+      run: sleep 10
+    - name: curlbackend
+      run: |
+        curl -v http://localhost:8001/ > response.txt 2>&1
+        echo "==== CURL OUTPUT START ===="
+        cat response.txt
+        echo "==== CURL OUTPUT END ===="
+    - name: compose down
+      run: docker compose down

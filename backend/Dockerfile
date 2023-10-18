@@ -17,4 +17,4 @@ COPY backend_api.py models.py search_algorithm.py smiles_syntax.py ss_select.py 
 
 EXPOSE 8001
 
-ENTRYPOINT ["bash", "-c", "chmod +x ./initialize_db/quick_start.sh && ./initialize_db/quick_start.sh"]
+ENTRYPOINT ["bash", "-c", "chmod +x ./initialize_db/test_start.sh && ./initialize_db/test_start.sh"]
