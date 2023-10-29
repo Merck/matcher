@@ -5,11 +5,13 @@
 # For SQL security reasons, to enable creation of alternative schema names other than 'public', you must uncomment the "CREATE SCHEMA" line in matcher/backend/mmpdb/mmpdblib/schema.py 
 postgres_schema="public"
 
-structures=./initialize_db/test_structures.smi
-fragments=./initialize_db/test_structures.fragments
-properties=./initialize_db/test_props.csv
-metadata=./initialize_db/test_metadata.csv
-example_queries=./initialize_db/example_queries.json
+INITIALIZE_DIR=./backend/initialize_db
+MMPDB_DIR=./backend/mmpdb
+structures=$INITIALIZE_DIR/test_structures.smi
+fragments=$INITIALIZE_DIR/test_structures.fragments
+properties=$INITIALIZE_DIR/test_props.csv
+metadata=$INITIALIZE_DIR/test_metadata.csv
+example_queries=$INITIALIZE_DIR/example_queries.json
 
 COMPLETION_FILE=./mmpdb_build_complete
 FAILURE_FILE=./mmpdb_build_failed
@@ -22,12 +24,12 @@ else
     # Populate mmpdb database from scratch
     {
         # Standard mmpdb command for generating fragments, except we defined new 'matcher_alpha' fragmentation criteria
-        conda run --no-capture-output -n matcher-api python ./mmpdb/mmpdb.py fragment "${structures}" -o "${fragments}" --cut-smarts 'matcher_alpha' && \
+        conda run --no-capture-output -n matcher-api python $MMPDB_DIR/mmpdb.py fragment "${structures}" -o "${fragments}" --cut-smarts 'matcher_alpha' && \
         # Standard mmpdb command for identifying MMPs and loading data to DB, except we introduced postgres support, and extended the data model
         # The db connection string takes the form of 'schema$postgres', with the rest of the connection parameters being set as environment variables in the docker-compose.yml file
-        conda run --no-capture-output -n matcher-api python ./mmpdb/mmpdb.py index "${fragments}" -o "$postgres_schema\$postgres" && \
+        conda run --no-capture-output -n matcher-api python $MMPDB_DIR/mmpdb.py index "${fragments}" -o "$postgres_schema\$postgres" && \
         # Standard mmpdb command for loading property data to DB, except we introduced postgres support and ability to add property metadata
-        conda run --no-capture-output -n matcher-api python ./mmpdb/mmpdb.py loadprops -p "${properties}" --metadata "${metadata}" "$postgres_schema\$postgres" && \
+        conda run --no-capture-output -n matcher-api python $MMPDB_DIR/mmpdb.py loadprops -p "${properties}" --metadata "${metadata}" "$postgres_schema\$postgres" && \
 
         # Here we load JSON representations of query input states, to a table in the database
         # Each input query will have a unique integer snapshot_id assigned, starting from 1, going up to the n total number of example query inputs that we write to DB
@@ -35,7 +37,7 @@ else
         # We embed these example queries in the "Run Example Query" page at http://localhost:8000/examples
         # To generate the required JSON for example_queries.json, print out the JSON that is passed to backend_api.snap_write upon clicking the "Copy Shareable Link" button in Matcher frontend,
         #   then either delete the 'query_id' key/value, or change the 'query_id' value to 'NULL'
-        conda run --no-capture-output -n matcher-api python ./initialize_db/load_example_queries.py "${example_queries}" $postgres_schema && \
+        conda run --no-capture-output -n matcher-api python ./backend/load_example_queries.py "${example_queries}" $postgres_schema && \
         touch "${COMPLETION_FILE}"
     } || {
         touch "${FAILURE_FILE}"
@@ -43,4 +45,4 @@ else
     }
 fi
 
-conda run --no-capture-output -n matcher-api uvicorn backend_api:app --host 0.0.0.0 --port 8001
+conda run --no-capture-output -n matcher-api uvicorn backend.backend_api:app --host 0.0.0.0 --port 8001

@@ -3,9 +3,7 @@ import time
 from rdkit.Chem import AllChem as Chem
 import copy
 import logging
-import ss_select
-import smiles_syntax
-import backend_api
+from backend import ss_select, smiles_syntax, backend_api
 logging.basicConfig(level=logging.INFO)
 
 

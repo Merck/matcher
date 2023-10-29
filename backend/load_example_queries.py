@@ -1,12 +1,9 @@
 import sys, os
-
-# backend_api.py is one level up
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from backend_api import snap_write
-
 import json
 import asyncio
-from models import ExampleQuery
+
+from backend.backend_api import snap_write
+from backend.models import ExampleQuery
 
 async def load_examples(json_file, schema='public'):
     with open(json_file) as f:

@@ -1,5 +1,5 @@
 from rdkit.Chem import AllChem as Chem
-import smiles_syntax
+from backend import smiles_syntax
 apply_glue = smiles_syntax.convert_labeled_wildcards_to_closures
 import re
 import copy
