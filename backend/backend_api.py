@@ -6,14 +6,14 @@ from fastapi.routing import APIRoute
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.responses import StreamingResponse
 from typing import Callable, List
-from models import QueryInput, repQueryInput, ValidateSelectionInput, AggregationParameters, PlotParameters, PairsCondensed, \
+from backend.models import QueryInput, repQueryInput, ValidateSelectionInput, AggregationParameters, PlotParameters, PairsCondensed, \
     GetAllRawData, EnumerationData, CreateSnapshotByRule
 
 # Modules for chemistry operations
 # Processes user-defined structure information in the Input UI
-import ss_select
+from backend import ss_select
 # Processes Matcher queries, and does post-processing on query results
-import search_algorithm
+from backend import search_algorithm
 
 from rdkit import Chem
 from rdkit.Chem import Draw

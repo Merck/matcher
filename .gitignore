@@ -5,7 +5,6 @@ debug.log
 .ipynb_checkpoints/
 KRAS_210628_amines_wSoly_1.csv
 t2.html
-tests/
 .DS_Store
 .venv
 .env

@@ -1,0 +1,35 @@
+name: Matcher CI
+
+on: [push]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Build Matcher images
+      run: docker compose build
+
+    - name: Launch Matcher containers
+      run: docker compose up -d
+      env:
+        # Causes tests to be run within containers
+        RUN_TESTS: true
+
+    - name: Check for successful tests
+      # Tests succeed iff containers exit 0
+      run: |
+        errors=0
+        container_ids=$(docker ps | grep -E 'matcher-backend|matcher_backend' | awk '{ print $1 }')
+        for container_id in $container_ids; do
+          if [ $(docker wait $container_id) -ne 0 ]; then
+            errors=$((errors+1))
+            docker logs $container_id
+          fi
+        done
+        if [ $errors -ne 0 ]; then
+          exit 1
+        fi
+
+    - name: Stop containers
+      run: docker compose down --volumes

@@ -6,15 +6,14 @@ RUN apt-get update -y && apt-get install libxrender1 -y
 
 WORKDIR /opt
 
-COPY environment.yml requirements.txt ./
+COPY environment.yml requirements.txt ./backend/
 
-RUN conda env create -f /opt/environment.yml
+RUN conda env create -f ./backend/environment.yml
 
-ADD mmpdb ./mmpdb
-ADD initialize_db ./initialize_db
-
-COPY backend_api.py models.py search_algorithm.py smiles_syntax.py ss_select.py ./
+COPY . ./backend
 
 EXPOSE 8001
 
-ENTRYPOINT ["bash", "-c", "chmod +x ./initialize_db/quick_start.sh && ./initialize_db/quick_start.sh"]
+ENV PYTHONPATH=/opt
+
+ENTRYPOINT ["bash", "-c", "echo $RUN_TESTS && chmod +x ./backend/initialize_db/test_start.sh && ./backend/initialize_db/test_start.sh"]

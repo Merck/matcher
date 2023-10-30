@@ -1,0 +1,5 @@
+Makefile
+__pycache__
+requirements.dev.txt
+openapi.json
+.env.example
