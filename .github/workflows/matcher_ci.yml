@@ -20,10 +20,11 @@ jobs:
       # Tests succeed iff containers exit 0
       run: |
         errors=0
-        container_ids=$(sudo sh -c "docker ps | grep -E 'matcher-backend|matcher_backend' | awk '{ print \$1 }'")
+        container_ids=$(docker ps | grep -E 'matcher-backend|matcher_backend' | awk '{ print $1 }')
         for container_id in $container_ids; do
           if [ $(docker wait $container_id) -ne 0 ]; then
             errors=$((errors+1))
+            docker logs $container_id
           fi
         done
         if [ $errors -ne 0 ]; then
