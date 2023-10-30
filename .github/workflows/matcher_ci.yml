@@ -12,23 +12,23 @@ jobs:
 
     - name: Launch Matcher containers
       run: docker compose up -d
+      env:
+        # Causes tests to be run within containers
+        RUN_TESTS: true
 
-    - name: Setup python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '>=3.9' 
-        cache: 'pip'
-
-    - name: ls
+    - name: Check for successful tests
+      # Tests succeed iff containers exit 0
       run: |
-        pwd
-        ls -lah
-
-    - name: Setup environment for tests
-      run: pip install -r ./tests/requirements.txt
-
-    - name: Run tests
-      run: python ./tests/test_matcher.py
+        errors=0
+        container_ids=$(sudo sh -c "docker ps | grep -E 'matcher-backend|matcher_backend' | awk '{ print \$1 }'")
+        for container_id in $container_ids; do
+          if [ $(docker wait $container_id) -ne 0 ]; then
+            errors=$((errors+1))
+          fi
+        done
+        if [ $errors -ne 0 ]; then
+          exit 1
+        fi
 
     - name: Stop containers
-      run: docker compose down
+      run: docker compose down --volumes

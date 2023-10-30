@@ -13,6 +13,12 @@ properties=$INITIALIZE_DIR/test_props.csv
 metadata=$INITIALIZE_DIR/test_metadata.csv
 example_queries=$INITIALIZE_DIR/example_queries.json
 
+if [[ "$RUN_TESTS" == "true" ]]; then
+    conda run --no-capture-output -n matcher-api pytest -s ./backend/tests/unit_tests || exit 1
+    # Only run unit tests for now
+    exit 0
+fi
+
 COMPLETION_FILE=./mmpdb_build_complete
 FAILURE_FILE=./mmpdb_build_failed
 if [ -f $COMPLETION_FILE ]; then
