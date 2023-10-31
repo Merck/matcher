@@ -55,3 +55,4 @@
  psycopg2              2.9.3      GNU Library or Lesser General Public License (LGPL)  https://psycopg.org/
  mmpdb                 2.1        BSD-3-Clause                                         https://github.com/rdkit/mmpdb
  skeleton              2.0.4      MIT License                                          https://github.com/dhg/Skeleton
+ wait-for-it           2023.10.31 MIT License                                          https://github.com/vishnubob/wait-for-it
