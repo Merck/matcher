@@ -7,6 +7,7 @@ COPY ./frontend/environment.yml ./frontend/requirements.txt ./frontend/
 RUN conda env create -f ./frontend/environment.yml
 
 COPY ./frontend ./frontend
+COPY ./scripts ./scripts
 
 EXPOSE 8000
 

@@ -11,6 +11,7 @@ COPY ./backend/environment.yml ./backend/requirements.txt ./backend/
 RUN conda env create -f ./backend/environment.yml
 
 COPY ./backend ./backend
+COPY ./scripts ./scripts
 
 EXPOSE 8001
 
