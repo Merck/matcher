@@ -13,12 +13,6 @@ properties=$INITIALIZE_DIR/test_props.csv
 metadata=$INITIALIZE_DIR/test_metadata.csv
 example_queries=$INITIALIZE_DIR/example_queries.json
 
-if [[ "$RUN_TESTS" == "true" ]]; then
-    conda run --no-capture-output -n matcher-api pytest -s -v ./backend/tests/unit_tests || exit 1
-    # Only run unit tests for now
-    exit 0
-fi
-
 COMPLETION_FILE=./mmpdb_build_complete
 FAILURE_FILE=./mmpdb_build_failed
 if [ -f $COMPLETION_FILE ]; then
@@ -51,4 +45,20 @@ else
     }
 fi
 
-conda run --no-capture-output -n matcher-api uvicorn backend.backend_api:app --host 0.0.0.0 --port 8001
+if [[ "$RUN_TESTS" == "true" ]]; then
+    # Start backend server in background
+    conda run --no-capture-output -n matcher-api uvicorn backend.backend_api:app --host 0.0.0.0 --port 8001 &
+
+    conda run --no-capture-output -n matcher-api pytest -s -v ./backend/tests/unit_tests || exit 1
+
+    # Ensure backend, frontend, database are ready before running tests across containers
+    ./scripts/wait-for-it.sh database:5432 -t 0
+    ./scripts/wait-for-it.sh backend:8001 -t 0
+    ./scripts/wait-for-it.sh frontend:8000 -t 0
+    conda run --no-capture-output -n matcher-api pytest -s -v ./backend/tests/integration_tests || exit 1
+
+    # The github actions workflow for testing depends on exit 0 from this container to determine success
+    exit 0
+else
+    conda run --no-capture-output -n matcher-api uvicorn backend.backend_api:app --host 0.0.0.0 --port 8001
+fi
