@@ -8,9 +8,9 @@ from dash.dependencies import Input, Output, State, ALL
 import pandas as pd
 import requests
 
-from pages.common.callbacks import (run_persistent_query, instantiate_output_elements, aggregate_statistics_by_rule, selected_point_to_pair_tables, update_graph)
-from config import backend_root, external_frontend_root
-from pages.snap.constants import create_id
+from frontend.pages.common.callbacks import (run_persistent_query, instantiate_output_elements, aggregate_statistics_by_rule, selected_point_to_pair_tables, update_graph)
+from frontend.config import backend_root, external_frontend_root
+from frontend.pages.snap.constants import create_id
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

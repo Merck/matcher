@@ -1,7 +1,7 @@
 import dash
 from dash import dcc, html
 
-from pages.snap.constants import DASH_PAGE_PREFIX
+from frontend.pages.snap.constants import DASH_PAGE_PREFIX
 
 dash.register_page(__name__, path=f'/{DASH_PAGE_PREFIX}/')
 

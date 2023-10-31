@@ -7,9 +7,9 @@ from functools import partial
 from dash import callback, clientside_callback
 from dash.dependencies import Input, Output, State, ALL
 
-from config import backend_root
-from pages.rep.constants import create_id
-from pages.common.callbacks import (instantiate_output_elements, aggregate_statistics_by_rule, selected_point_to_pair_tables, update_graph)
+from frontend.config import backend_root
+from frontend.pages.rep.constants import create_id
+from frontend.pages.common.callbacks import (instantiate_output_elements, aggregate_statistics_by_rule, selected_point_to_pair_tables, update_graph)
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

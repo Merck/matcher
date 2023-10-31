@@ -2,18 +2,14 @@ FROM condaforge/miniforge3
 
 WORKDIR /opt
 
-COPY environment.yml requirements.txt ./
+COPY ./frontend/environment.yml ./frontend/requirements.txt ./frontend/
 
-RUN conda env create -f /opt/environment.yml
+RUN conda env create -f ./frontend/environment.yml
 
-COPY frontend_api.py monkey.py config.py dash_app.py ./
-COPY examples/ ./examples/
-COPY css/ ./css/
-COPY js/* ./js/
-COPY ketcher/ ./ketcher/
-COPY pages/ ./pages/
-COPY templates/ ./templates/
+COPY ./frontend ./frontend
 
 EXPOSE 8000
 
-ENTRYPOINT ["conda", "run", "--no-capture-output", "-n", "matcher-frontend", "gunicorn", "--worker-class", "gevent", "--workers", "2", "--bind", "0.0.0.0:8000", "monkey:server"]
+ENV PYTHONPATH=/opt
+
+ENTRYPOINT ["conda", "run", "--no-capture-output", "-n", "matcher-frontend", "gunicorn", "--worker-class", "gevent", "--workers", "2", "--bind", "0.0.0.0:8000", "frontend.monkey:server"]

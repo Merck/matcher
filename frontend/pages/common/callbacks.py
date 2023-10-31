@@ -10,8 +10,8 @@ from dash import dcc, html, dash_table
 import pandas as pd
 import plotly.graph_objects as go
 
-from config import backend_root
-from pages.common.pairplot import (
+from frontend.config import backend_root
+from frontend.pages.common.pairplot import (
     get_individual_transforms_df,
     get_group_by_fragment_df,
     get_group_by_fragment_table,

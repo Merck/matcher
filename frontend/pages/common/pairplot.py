@@ -2,7 +2,7 @@ from dash import dash_table
 import pandas as pd
 import urllib
 import logging
-from config import external_backend_root
+from frontend.config import external_backend_root
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
