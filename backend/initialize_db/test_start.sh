@@ -24,6 +24,9 @@ else
     # Populate mmpdb database from scratch
     {
         # Standard mmpdb command for generating fragments, except we defined new 'matcher_alpha' fragmentation criteria
+        ls -la
+        ls -la ./backend
+        ls -la $MMPDB_DIR
         conda run --no-capture-output -n matcher-api python $MMPDB_DIR/mmpdb.py fragment "${structures}" -o "${fragments}" --cut-smarts 'matcher_alpha' && \
         # Standard mmpdb command for identifying MMPs and loading data to DB, except we introduced postgres support, and extended the data model
         # The db connection string takes the form of 'schema$postgres', with the rest of the connection parameters being set as environment variables in the docker-compose.yml file
