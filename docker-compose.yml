@@ -13,7 +13,8 @@ services:
       - matcher-network
   backend:
     build:
-      context: ./backend
+      context: .
+      dockerfile: ./backend/Dockerfile
     ports:
       - 8001:8001
     environment:
@@ -29,7 +30,8 @@ services:
       - matcher-network
   frontend:
     build:
-      context: ./frontend
+      context: .
+      dockerfile: ./frontend/Dockerfile
     ports:
       - 8000:8000
     environment:

@@ -2,7 +2,7 @@ import dash
 from dash import dcc, html
 
 import logging
-from pages.rep.constants import DASH_PAGE_PREFIX, create_id
+from frontend.pages.rep.constants import DASH_PAGE_PREFIX, create_id
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

@@ -1,0 +1,7 @@
+.env
+.env.example
+Makefile
+__pycache__
+assets
+requirements.dev.txt
+venv
