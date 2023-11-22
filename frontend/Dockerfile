@@ -1,4 +1,4 @@
-FROM condaforge/miniforge3
+FROM condaforge/miniforge3:23.3.1-1
 
 WORKDIR /opt
 
