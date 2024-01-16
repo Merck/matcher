@@ -27,6 +27,9 @@ else
         conda run --no-capture-output -n matcher-api python $MMPDB_DIR/mmpdb.py fragment "${structures}" -o "${fragments}" --cut-smarts 'matcher_alpha' && \
         # Standard mmpdb command for identifying MMPs and loading data to DB, except we introduced postgres support, and extended the data model
         # The db connection string takes the form of 'schema$postgres', with the rest of the connection parameters being set as environment variables in the docker-compose.yml file
+
+        # Hereafter we are writing to the DB, make sure the DB is ready
+        ./scripts/wait-for-it.sh database:5432 -t 0
         conda run --no-capture-output -n matcher-api python $MMPDB_DIR/mmpdb.py index "${fragments}" -o "$postgres_schema\$postgres" && \
         # Standard mmpdb command for loading property data to DB, except we introduced postgres support and ability to add property metadata
         conda run --no-capture-output -n matcher-api python $MMPDB_DIR/mmpdb.py loadprops -p "${properties}" --metadata "${metadata}" "$postgres_schema\$postgres" && \
@@ -51,8 +54,7 @@ if [[ "$RUN_TESTS" == "true" ]]; then
 
     conda run --no-capture-output -n matcher-api pytest -s -v ./backend/tests/unit_tests || exit 1
 
-    # Ensure backend, frontend, database are ready before running tests across containers
-    ./scripts/wait-for-it.sh database:5432 -t 0
+    # Ensure backend, frontend are ready before running tests across containers
     ./scripts/wait-for-it.sh backend:8001 -t 0
     ./scripts/wait-for-it.sh frontend:8000 -t 0
     conda run --no-capture-output -n matcher-api pytest -s -v ./backend/tests/integration_tests || exit 1
