@@ -87,9 +87,11 @@ As an example, we illustrate how to use a "medium-size" dataset containing 20,26
 <br></br>
 
 3. Recreate the containers:
-    * Navigate to the parent directory (matcher/), and execute the following command:
+    * Navigate to the parent directory (matcher/), and execute the following commands (note that using the --volumes flag deletes your previous matcher DB data):
 
 ```
+docker-compose down --volumes && \
+docker-compose build && \
 docker-compose up --force-recreate
 ```
 
