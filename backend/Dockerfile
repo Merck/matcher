@@ -17,4 +17,5 @@ EXPOSE 8001
 
 ENV PYTHONPATH=/opt
 
-ENTRYPOINT ["bash", "-c", "echo $RUN_TESTS && chmod +x ./backend/initialize_db/quick_start.sh && ./backend/initialize_db/quick_start.sh"]
+RUN chmod +x ./backend/entrypoint.sh
+ENTRYPOINT ["./backend/entrypoint.sh"]

@@ -4,8 +4,7 @@ also test ability to query database from backend."""
 from backend.backend_api import get_matcher_conn
 import pytest
 
-# These tests will fail if you change the input data or build process
-# If data or build process is changed, then update the expected values
+# Success of this test depends on using the "test" dataset in backend/initialize_db
 
 @pytest.mark.asyncio
 async def test_db_build_complete():

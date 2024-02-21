@@ -1,4 +1,10 @@
 #!/bin/bash
+DATASET="quick_start"
+#DATASET="test"
+#DATASET="ChEMBL_CYP3A4_hERG"
+
+#RUN_TESTS="true"
+[ "$RUN_TESTS" = "true" ] && DATASET="test"
 
 # To access specific schema from a browser client, use the query variable 'schema', e.g. localhost:8000/?schema=public
 # By default, the root path (e.g. localhost:8000/) will redirect to the 'public' schema
@@ -7,10 +13,10 @@ postgres_schema="public"
 
 INITIALIZE_DIR=./backend/initialize_db
 MMPDB_DIR=./backend/mmpdb
-structures=$INITIALIZE_DIR/test_structures.smi
-fragments=$INITIALIZE_DIR/test_structures.fragments
-properties=$INITIALIZE_DIR/test_props.csv
-metadata=$INITIALIZE_DIR/test_metadata.csv
+structures=$INITIALIZE_DIR/${DATASET}_structures.smi
+fragments=$INITIALIZE_DIR/${DATASET}_structures.fragments
+properties=$INITIALIZE_DIR/${DATASET}_props.csv
+metadata=$INITIALIZE_DIR/${DATASET}_metadata.csv
 example_queries=$INITIALIZE_DIR/example_queries.json
 
 COMPLETION_FILE=./mmpdb_build_complete
@@ -48,7 +54,9 @@ else
     }
 fi
 
-if [[ "$RUN_TESTS" == "true" ]]; then
+if [[ "$RUN_TESTS" = "true" ]]; then
+    [ "$DATASET" != "test" ] && { echo "'test' dataset must be used when RUN_TESTS is true"; exit 1; }
+
     # Start backend server in background
     conda run --no-capture-output -n matcher-api uvicorn backend.backend_api:app --host 0.0.0.0 --port 8001 &
 
