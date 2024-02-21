@@ -1,4 +1,6 @@
 ![matcher search example](https://github.com/Merck/matcher/blob/main/frontend/examples/1.png?raw=True)
+[Publication: Matcher: An Open-Source Application for Translating Large Structure/Property Data Sets into Insights for Drug Design](https://pubs.acs.org/doi/abs/10.1021/acs.jcim.3c00015)<br>
+[Free preprint of above publication](https://chemrxiv.org/engage/chemrxiv/article-details/63586c15aca19850f7e53e55)
 
 Matcher is a tool for understanding how chemical structure optimization problems have been solved.
 
@@ -58,7 +60,7 @@ Important: The example queries are only guaranteed to work with the example data
 
 Data is present in the backend/initialize_db directory.
 
-<strong>Quick Start data (default)</strong>: Data filenames begin with "quick". Contains 1089 ChEMBL compounds, the minimum to fully reproduce queries described in our publication (TODO: Add hyperlink here).
+<strong>Quick Start data (default)</strong>: Data filenames begin with "quick_start". Contains 1089 ChEMBL compounds, the minimum to fully reproduce queries described in our publication (TODO: Add hyperlink here).
 
 <strong>Rapidly test/debug the deployment</strong>: Data filenames begin with "test". Contains 16 ChEMBL compounds, a subset of the Quick Start 1078 compounds, for the purpose of rapid testing during development or troubleshooting. All example queries work, but return only a few results.
 
@@ -70,20 +72,19 @@ The default input compound/property dataset is intentionally very small, so that
 
 To use arbitrary data, follow the below steps.
 
-As an example, we illustrate how to use a "medium-size" dataset containing 20,267 compounds taken from the [mmpdb publication](https://pubs.acs.org/doi/10.1021/acs.jcim.8b00173), and referenced in our publication (TODO: Add hyperlink here).
+As an example, we illustrate how to use a "medium-size" dataset containing 20,267 compounds taken from the [mmpdb publication](https://pubs.acs.org/doi/10.1021/acs.jcim.8b00173), and referenced in [our publication](https://pubs.acs.org/doi/abs/10.1021/acs.jcim.3c00015).
 
-1. Add raw data to the matcher/backend/initialize_db directory. Two files are required, a third file is optional:
+1. Add raw data to the matcher/backend/initialize_db directory. Two files are required, a third file is optional. All files must begin with the same identifier: `your_dataset_name`, which in this example is `ChEMBL_CYP3A4_hERG`:
     * **Required**: File containing compound SMILES and compound IDs.
         * For this example, ChEMBL_CYP3A4_hERG_structures.smi is already included.<br></br>
     * **Required**: File containing compound IDs and property values.
         * For this example, ChEMBL_CYP3A4_hERG_props.txt is already included.<br></br>
     * **Optional**: File containing metadata about the compound property data (whether the data is log transformed, the units, and how the data should be displayed to users).
-        * For this example, ChEMBL_CYP3A4_hERG_metadata.csv is already included. If no metadata file is provided, then by default, property labels and data will be displayed to users exactly as provided in the above property value file, and changes between two properties will be treated as differences (B - A).
+        * For this example, ChEMBL_CYP3A4_hERG_metadata.csv is already included. If you do not wish to provide metadata, edit out the `--metadata` argument from this line of code in `entrypoint.sh`: `conda run --no-capture-output -n matcher-api python $MMPDB_DIR/mmpdb.py loadprops -p "${properties}" --metadata "${metadata}" "$postgres_schema\$postgres" && \`. If no metadata file is provided, then by default, property labels and data will be displayed to users exactly as provided in the above property value file, and changes between two properties will be treated as differences (B - A).
 <br></br>
 
-2. Edit matcher/backend/initialize_db/quick_start.sh to reference the new data.
-    * For this example, we have already performed the editing, and the resulting file is matcher/backend/initialize_db/ChEMBL_CYP3A4_hERG_start.sh.
-        * To use this example file, either rename matcher/backend/initialize_db/ChEMBL_CYP3A4_hERG_start.sh to matcher/backend/initialize_db/quick_start.sh (thus replacing the original file with same name), or edit matcher/backend/Dockerfile by changing the two occurrences of quick_start.sh to ChEMBL_CYP3A4_hERG_start.sh.
+2. Edit matcher/backend/entrypoint.sh by setting `DATASET=your_dataset_name`, using `your_dataset_name` from step 1. above.
+
 <br></br>
 
 3. Recreate the containers:
