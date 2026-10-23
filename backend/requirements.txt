@@ -2,7 +2,7 @@ asyncpg==0.24.0
 fastapi==0.73.0
 orjson==3.6.0
 pandas==1.4.1
-pillow==8.3.1
+pillow==13.0.0
 python-multipart==0.0.5
 rdkit-pypi==2021.3.5
 typing-extensions==4.5.0
